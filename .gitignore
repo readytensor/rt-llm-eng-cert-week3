@@ -211,3 +211,10 @@ __marimo__/
 test.py
 
 checkpoints/
+aws/
+README_files/
+
+code/requirements.txt
+
+pyproject.toml
+uv.lock

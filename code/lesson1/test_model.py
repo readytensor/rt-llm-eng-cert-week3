@@ -11,7 +11,9 @@ from utils import read_json_file, get_last_checkpoint_path
 from paths import CONFIG_FILE, CHECKPOINTS_DIR
 
 
-def load_trained_model(checkpoint_path: str, base_model_name: Optional[str] = None):
+def load_trained_model(
+    checkpoint_path: str, base_model_name: Optional[str] = None, device: str = "auto"
+):
     """
     Load a fine-tuned model from checkpoint.
 
@@ -33,7 +35,7 @@ def load_trained_model(checkpoint_path: str, base_model_name: Optional[str] = No
     base_model = AutoModelForCausalLM.from_pretrained(
         base_model_name,
         torch_dtype=torch.float16,
-        device_map="auto",
+        device_map=device,
     )
 
     # Load tokenizer
@@ -94,7 +96,6 @@ def test_model_with_question(
 
     # Decode the full response
     full_response = tokenizer.decode(outputs[0], skip_special_tokens=False)
-    print(outputs[0])
 
     # Extract only the generated part (after the prompt)
     generated_text = full_response[len(test_prompt) :].strip()
@@ -102,7 +103,9 @@ def test_model_with_question(
     return generated_text
 
 
-def test_model_interactive(checkpoint_path: str, base_model_name: Optional[str] = None):
+def test_model_interactive(
+    checkpoint_path: str, base_model_name: Optional[str] = None, device: str = "auto"
+):
     """
     Interactive testing session with the model.
 
@@ -115,7 +118,7 @@ def test_model_interactive(checkpoint_path: str, base_model_name: Optional[str] 
     print("=" * 60)
 
     # Load model and tokenizer
-    model, tokenizer = load_trained_model(checkpoint_path, base_model_name)
+    model, tokenizer = load_trained_model(checkpoint_path, base_model_name, device)
 
     print("\nModel loaded successfully!")
     print("Enter questions to test the model (type 'quit' to exit)")
@@ -188,4 +191,5 @@ if __name__ == "__main__":
     test_model_interactive(
         last_checkpoint_path,
         "meta-llama/Llama-3.2-1B-Instruct",
+        device="cpu",
     )
