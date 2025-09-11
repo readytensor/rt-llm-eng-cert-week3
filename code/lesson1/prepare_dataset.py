@@ -142,12 +142,14 @@ def tokenize_dataset(
 
     # Tokenize dataset with assistant masking
     def tokenize_and_mask_function(examples):
+        texts_with_eos = [text + tokenizer.eos_token for text in examples["text"]]
         tokenized = tokenizer(
-            examples["text"],
+            texts_with_eos,
             truncation=True,
             padding=False,
             max_length=512,
             return_tensors=None,
+            add_special_tokens=True,
         )
 
         # Apply assistant-only masking to each example

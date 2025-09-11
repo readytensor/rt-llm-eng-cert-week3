@@ -1,4 +1,5 @@
 import torch
+import os
 import json
 from typing import List, Dict
 from datasets import Dataset
@@ -53,3 +54,17 @@ def read_json_file(file_path: str) -> dict:
     """
     with open(file_path, "r") as file:
         return json.load(file)
+
+
+def get_last_checkpoint_path(checkpoints_dir: str) -> str:
+    """
+    Get the path to the last checkpoint in the checkpoints directory.
+    """
+    checkpoints = sorted(
+        [
+            int(f.replace("checkpoint-", ""))
+            for f in os.listdir(checkpoints_dir)
+            if f.startswith("checkpoint")
+        ]
+    )
+    return os.path.join(checkpoints_dir, f"checkpoint-{checkpoints[-1]}")
