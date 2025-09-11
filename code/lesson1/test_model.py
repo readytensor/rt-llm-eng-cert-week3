@@ -7,8 +7,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
-from utils import read_json_file
-from paths import CONFIG_FILE
+from utils import read_json_file, get_last_checkpoint_path
+from paths import CONFIG_FILE, CHECKPOINTS_DIR
 
 
 def load_trained_model(checkpoint_path: str, base_model_name: Optional[str] = None):
@@ -93,7 +93,8 @@ def test_model_with_question(
         )
 
     # Decode the full response
-    full_response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    full_response = tokenizer.decode(outputs[0], skip_special_tokens=False)
+    print(outputs[0])
 
     # Extract only the generated part (after the prompt)
     generated_text = full_response[len(test_prompt) :].strip()
@@ -182,7 +183,9 @@ def test_model_batch(
 
 if __name__ == "__main__":
 
+    last_checkpoint_path = get_last_checkpoint_path(CHECKPOINTS_DIR)
+
     test_model_interactive(
-        "/Users/mo/Desktop/ReadyTensor/certifications/llm-finetuning/repos/rt-llm-finetuning-cert-week3/results/checkpoint-90",
+        last_checkpoint_path,
         "meta-llama/Llama-3.2-1B-Instruct",
     )

@@ -7,7 +7,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from peft import LoraConfig, get_peft_model
 from transformers import (
     AutoModelForCausalLM,
-    AutoTokenizer,
     BitsAndBytesConfig,
     TrainingArguments,
     DataCollatorForLanguageModeling,
@@ -85,6 +84,7 @@ print(f"PEFT model size: {get_model_size_gb(peft_model):.2f} GB")
 tokenized_dataset, tokenizer = tokenize_dataset(
     model_name, assistant_only_masking=assistant_only_masking
 )
+
 
 # Setup data collator for padding
 print("\n" + "=" * 50)
