@@ -1,6 +1,8 @@
 import sys
 import os
 import torch
+from dotenv import load_dotenv
+
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -18,9 +20,11 @@ from utils import (
     get_model_size_gb,
 )
 from prepare_dataset import tokenize_dataset
-from paths import CONFIG_FILE
+from paths import CONFIG_FILE, CODE_DIR
 
 from typing import Optional
+from huggingface_hub import login
+
 
 config = read_json_file(CONFIG_FILE)
 model_name = config["model_name"]
@@ -31,6 +35,18 @@ use_qlora = config["use_qlora"]
 training_args = config["training_args"]
 
 assistant_only_masking = config["assistant_only_masking"]
+use_sagemaker = config.get("use_sagemaker", False)
+
+if use_sagemaker:
+    print("Using SageMaker, setting output directory to /opt/ml/model")
+    training_args["output_dir"] = "/opt/ml/model"
+    load_dotenv(dotenv_path=os.path.join(CODE_DIR, ".env"))
+
+    if os.getenv("HF_TOKEN") is None:
+        raise ValueError("HF_TOKEN is not set in the environment variables")
+
+    login(token=os.getenv("HF_TOKEN"))
+
 
 bnb_config = None
 
