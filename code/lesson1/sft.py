@@ -35,17 +35,6 @@ use_qlora = config["use_qlora"]
 training_args = config["training_args"]
 
 assistant_only_masking = config["assistant_only_masking"]
-use_sagemaker = config.get("use_sagemaker", False)
-
-if use_sagemaker:
-    print("Using SageMaker, setting output directory to /opt/ml/model")
-    training_args["output_dir"] = "/opt/ml/model"
-    load_dotenv(dotenv_path=os.path.join(CODE_DIR, ".env"))
-
-    if os.getenv("HF_TOKEN") is None:
-        raise ValueError("HF_TOKEN is not set in the environment variables")
-
-    login(token=os.getenv("HF_TOKEN"))
 
 
 bnb_config = None
