@@ -1,0 +1,13 @@
+{
+        "train_batch_size": "auto",
+        "gradient_accumulation_steps": "auto",
+        "fp16": {
+            "enabled": "True"
+        },
+        "zero_optimization": {
+            "stage": 1, 
+            "allgather_partitions": "True",
+            "reduce_bucket_size": 5e8,
+            "overlap_comm": "True"
+        }
+    }
