@@ -197,44 +197,6 @@ def tokenize_dataset(
             labels.append(masked_labels)
 
         tokenized["labels"] = labels
-
-        # Debug: Check for invalid token indices
-        vocab_size = len(tokenizer.get_vocab())
-        print(f"🔍 Tokenizer vocab size: {vocab_size}")
-
-        for i, (input_ids, labels_seq) in enumerate(
-            zip(tokenized["input_ids"], labels)
-        ):
-            # Check input_ids
-            if input_ids:
-                max_input_id = max(input_ids)
-                min_input_id = min(input_ids)
-                if max_input_id >= vocab_size:
-                    print(
-                        f"❌ CRITICAL: Example {i} has input_id {max_input_id} >= vocab_size {vocab_size}"
-                    )
-                    print(f"   Input IDs: {input_ids}")
-                    print(f"   Text: {tokenizer.decode(input_ids[:50])}")
-                if min_input_id < 0:
-                    print(
-                        f"❌ CRITICAL: Example {i} has negative input_id {min_input_id}"
-                    )
-
-            # Check labels
-            if labels_seq:
-                valid_labels = [l for l in labels_seq if l != -100]
-                if valid_labels:
-                    max_label = max(valid_labels)
-                    min_label = min(valid_labels)
-                    if max_label >= vocab_size:
-                        print(
-                            f"❌ CRITICAL: Example {i} has label {max_label} >= vocab_size {vocab_size}"
-                        )
-                        print(f"   Labels: {labels_seq}")
-                    if min_label < -100:
-                        print(f"❌ CRITICAL: Example {i} has invalid label {min_label}")
-
-        print(f"✅ Processed {len(tokenized['input_ids'])} examples")
         return tokenized
 
     train = train_dataset.map(
@@ -272,21 +234,7 @@ class DataCollatorForCausalLM:
         labels = [f.pop("labels") for f in features]
 
         # This pads input_ids and attention_mask consistently
-        batch = self.tokenizer.pad(
-            features,
-            padding=True,
-            return_tensors="pt",
-            pad_to_multiple_of=None,
-            return_attention_mask=True,
-        )
-
-        # Ensure pad token ID is valid
-        if self.tokenizer.pad_token_id >= len(self.tokenizer.get_vocab()):
-            print(
-                f"❌ Invalid pad_token_id: {self.tokenizer.pad_token_id} >= vocab_size {len(self.tokenizer.get_vocab())}"
-            )
-            # Fix by using eos_token_id
-            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+        batch = self.tokenizer.pad(features, padding=True, return_tensors="pt")
 
         # Now pad labels to the same max length
         max_len = batch["input_ids"].size(1)
