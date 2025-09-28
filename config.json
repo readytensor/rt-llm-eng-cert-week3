@@ -36,7 +36,7 @@
         "learning_rate": 5e-4,
         "logging_steps": 4,
         "save_strategy": "epoch",
-        "eval_strategy": "no",
+        "eval_strategy": "epoch",
         "warmup_steps": 0,
         "lr_scheduler_type": "cosine",
         "optim": "adamw_torch",
