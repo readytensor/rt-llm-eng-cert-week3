@@ -133,6 +133,7 @@ def tokenize_dataset(
         instruction_column=instruction_column,
         input_column=input_column,
         output_column=output_column,
+        sample_size=sample_size,
     )
 
     # Setup tokenizer
