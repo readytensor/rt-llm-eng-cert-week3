@@ -75,7 +75,7 @@ peft_model = get_apply_peft(model_name, lora_config, bnb_config)
 print(f"PEFT model size: {get_model_size_gb(peft_model):.2f} GB")
 
 
-train, validation, test, tokenizer = tokenize_dataset(
+train, validation, _, tokenizer = tokenize_dataset(
     model_name=model_name,
     assistant_only_masking=assistant_only_masking,
     **dataset_config,

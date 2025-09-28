@@ -15,6 +15,8 @@ def prepare_dataset(
     input_column: str,
     output_column: str,
     sample_size: Optional[int] = None,
+    validation_size: Optional[float] = None,
+    test_size: Optional[float] = None,
 ) -> Tuple[Dataset, Dataset, Dataset]:
     """
     Load and prepare the dataset for fine-tuning.
@@ -54,18 +56,46 @@ def prepare_dataset(
     if sample_size is not None:
         dataset["train"] = dataset["train"].select(range(sample_size))
 
-    train_dataset = dataset["train"] if "train" in dataset else None
-    validation_dataset = dataset["validation"] if "validation" in dataset else None
-    test_dataset = dataset["test"] if "test" in dataset else None
+    if validation_size is not None and test_size is not None:
+        val_plus_test_size = validation_size + test_size
+        split = dataset["train"].train_test_split(test_size=val_plus_test_size, seed=42)
+        dataset["validation_and_test"] = split["test"]
+        dataset["train"] = split["train"]
 
-    if train_dataset is not None:
-        train_dataset = train_dataset.map(format_instruction_data)
+        test_to_val_plus_test_ratio = test_size / val_plus_test_size
+        split = dataset["validation_and_test"].train_test_split(
+            test_size=test_to_val_plus_test_ratio, seed=42
+        )
+        dataset["test"] = split["test"]
+        dataset["validation"] = split["train"]
+        del dataset["validation_and_test"]
 
-    if validation_dataset is not None:
-        validation_dataset = validation_dataset.map(format_instruction_data)
+    elif validation_size is not None:
+        split = dataset["train"].train_test_split(test_size=validation_size, seed=42)
+        dataset["validation"] = split["test"]
+        dataset["train"] = split["train"]
 
-    if test_dataset is not None:
-        test_dataset = test_dataset.map(format_instruction_data)
+    elif test_size is not None:
+        split = dataset["train"].train_test_split(test_size=test_size, seed=42)
+        dataset["test"] = split["test"]
+        dataset["train"] = split["train"]
+
+    validation_dataset = None
+    test_dataset = None
+
+    train_dataset = dataset["train"].map(
+        format_instruction_data, desc="Formatting train data"
+    )
+
+    if "validation" in dataset:
+        validation_dataset = dataset["validation"].map(
+            format_instruction_data, desc="Formatting validation data"
+        )
+
+    if "test" in dataset:
+        test_dataset = dataset["test"].map(
+            format_instruction_data, desc="Formatting test data"
+        )
 
     return train_dataset, validation_dataset, test_dataset
 
@@ -114,6 +144,8 @@ def tokenize_dataset(
     assistant_only_masking: bool = True,
     max_length: int = 2048,
     sample_size: Optional[int] = None,
+    validation_size: Optional[float] = None,
+    test_size: Optional[float] = None,
 ) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
     """
     Load and prepare the dataset with tokenization and assistant-only masking.
@@ -134,6 +166,8 @@ def tokenize_dataset(
         input_column=input_column,
         output_column=output_column,
         sample_size=sample_size,
+        validation_size=validation_size,
+        test_size=test_size,
     )
 
     # Setup tokenizer
@@ -168,6 +202,7 @@ def tokenize_dataset(
         tokenize_and_mask_function,
         batched=True,
         remove_columns=train_dataset.column_names,
+        desc="Processing train dataset",
     )
     validation = None
     if validation_dataset is not None:
@@ -175,6 +210,7 @@ def tokenize_dataset(
             tokenize_and_mask_function,
             batched=True,
             remove_columns=train_dataset.column_names,
+            desc="Processing validation dataset",
         )
     test = None
     if test_dataset is not None:
@@ -182,6 +218,7 @@ def tokenize_dataset(
             tokenize_and_mask_function,
             batched=True,
             remove_columns=train_dataset.column_names,
+            desc="Processing test dataset",
         )
 
     return train, validation, test, tokenizer
