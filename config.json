@@ -1,7 +1,7 @@
 {
     "model_name": "openai-community/gpt2",
     "save_model_name": "gpt2-legal-qlora",
-    "assistant_only_masking": true,
+    "assistant_only_masking": false,
     "use_qlora": true,
     "dataset_config": {
         "dataset_name": "NebulaSense/Legal_Clause_Instructions",
@@ -30,7 +30,7 @@
         "per_device_train_batch_size": 4,
         "gradient_accumulation_steps": 4,
         "num_train_epochs": 3,
-        "learning_rate": 5e-4,
+        "learning_rate": 2e-4,
         "logging_steps": 4,
         "save_strategy": "epoch",
         "eval_strategy": "epoch",
@@ -40,6 +40,7 @@
         "report_to": null,
         "remove_unused_columns": false,
         "dataloader_drop_last": true,
-        "gradient_checkpointing": false
+        "gradient_checkpointing": false,
+        "max_grad_norm": 1.0
     }
 }
