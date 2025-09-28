@@ -1,6 +1,6 @@
 {
-    "model_name": "Qwen/Qwen2-0.5B-Instruct",
-    "save_model_name": "qwen-0.5b-legal-qlora",
+    "model_name": "meta-llama/Llama-3.2-1B",
+    "save_model_name": "llama-1b-legal-qlora",
     "assistant_only_masking": false,
     "use_qlora": true,
     "dataset_config": {
