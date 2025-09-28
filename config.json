@@ -9,7 +9,9 @@
         "input_column": "Input",
         "output_column": "Output",
         "max_length": 2048,
-        "sample_size": 1000
+        "sample_size": null,
+        "validation_size": 0.1,
+        "test_size": null
     },
     "quantization_config": {
         "load_in_4bit": true
