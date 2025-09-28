@@ -1,0 +1,13 @@
+{
+        "train_batch_size": "auto",
+        "gradient_accumulation_steps": "auto",
+        "fp16": {
+            "enabled": "True"
+        },
+        "zero_optimization": {
+            "stage": 2,
+            "allgather_partitions": "True",
+            "reduce_scatter": "True",
+            "contiguous_gradients": "True"
+        }
+    }
