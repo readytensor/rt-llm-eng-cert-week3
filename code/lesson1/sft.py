@@ -3,7 +3,6 @@ import os
 import torch
 from dotenv import load_dotenv
 
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from peft import LoraConfig, get_peft_model
@@ -11,20 +10,24 @@ from transformers import (
     AutoModelForCausalLM,
     BitsAndBytesConfig,
     TrainingArguments,
-    DataCollatorForLanguageModeling,
+    Trainer,
 )
-from trl import SFTTrainer
 from utils import (
     count_trainable_params,
     read_json_file,
     get_model_size_gb,
 )
 from prepare_dataset import tokenize_dataset
-from paths import CONFIG_FILE, CODE_DIR
+from paths import CONFIG_FILE
 
 from typing import Optional
 from huggingface_hub import login
 
+
+load_dotenv()
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+login(HF_TOKEN)
 
 config = read_json_file(CONFIG_FILE)
 model_name = config["model_name"]
@@ -96,10 +99,6 @@ print("\n" + "=" * 50)
 print("SETTING UP TRAINING")
 print("=" * 50)
 
-data_collator = DataCollatorForLanguageModeling(
-    tokenizer=tokenizer,
-    mlm=False,  # We're doing causal language modeling, not masked LM
-)
 
 # Training arguments
 training_args = TrainingArguments(**training_args)
@@ -113,18 +112,10 @@ if assistant_only_masking:
     masked_tokens = sum(1 for label in labels if label == -100)
     total_tokens = len(labels)
 
-    print(f"\nMasking statistics for first example:")
-    print(f"- Total tokens: {total_tokens}")
-    print(f"- Masked tokens: {masked_tokens}")
-    print(f"- Training tokens: {total_tokens - masked_tokens}")
-    print(f"- Masking ratio: {masked_tokens / total_tokens * 100:.1f}%")
-
-# Setup SFTTrainer
-trainer = SFTTrainer(
+trainer = Trainer(
     model=peft_model,
     args=training_args,
     train_dataset=tokenized_dataset,
-    data_collator=data_collator,
 )
 
 trainer.train()
