@@ -218,3 +218,5 @@ code/requirements.txt
 
 pyproject.toml
 uv.lock
+code/lesson3/pub.md
+code/lesson2/pub.md
