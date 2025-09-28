@@ -20,10 +20,7 @@
         "r": 8,
         "lora_alpha": 32,
         "target_modules": [
-            "q_proj",
-            "k_proj",
-            "v_proj",
-            "o_proj"
+            "c_attn"
         ],
         "lora_dropout": 0.05,
         "bias": "none"
