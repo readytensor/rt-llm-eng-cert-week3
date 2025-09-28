@@ -3,14 +3,18 @@ import sys
 import torch
 from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def prepare_dataset(
-    dataset_name: str, instruction_column: str, input_column: str, output_column: str
+    dataset_name: str,
+    instruction_column: str,
+    input_column: str,
+    output_column: str,
+    sample_size: Optional[int] = None,
 ) -> Tuple[Dataset, Dataset, Dataset]:
     """
     Load and prepare the dataset for fine-tuning.
@@ -46,6 +50,9 @@ def prepare_dataset(
         return {"text": formatted_text}
 
     dataset = load_dataset(dataset_name)
+
+    if sample_size is not None:
+        dataset["train"] = dataset["train"].select(range(sample_size))
 
     train_dataset = dataset["train"] if "train" in dataset else None
     validation_dataset = dataset["validation"] if "validation" in dataset else None
@@ -106,6 +113,7 @@ def tokenize_dataset(
     output_column: str,
     assistant_only_masking: bool = True,
     max_length: int = 2048,
+    sample_size: Optional[int] = None,
 ) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
     """
     Load and prepare the dataset with tokenization and assistant-only masking.
