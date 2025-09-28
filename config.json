@@ -1,6 +1,6 @@
 {
-    "model_name": "Qwen/Qwen2-1.5B-Instruct",
-    "save_model_name": "qwen-1.5b-legal-qlora",
+    "model_name": "Qwen/Qwen2-0.5B-Instruct",
+    "save_model_name": "qwen-0.5b-legal-qlora",
     "assistant_only_masking": false,
     "use_qlora": true,
     "dataset_config": {
