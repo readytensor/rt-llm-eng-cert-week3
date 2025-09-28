@@ -1,5 +1,6 @@
 import os
 import sys
+import torch
 from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer
 from typing import List, Dict, Tuple
@@ -175,3 +176,23 @@ def tokenize_dataset(
         )
 
     return train, validation, test, tokenizer
+
+
+class DataCollatorForCausalLM:
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
+    def __call__(self, features):
+        # Remove labels before tokenizer.pad so only ids/mask are padded
+        labels = [f.pop("labels") for f in features]
+
+        # This pads input_ids and attention_mask consistently
+        batch = self.tokenizer.pad(features, padding=True, return_tensors="pt")
+
+        # Now pad labels to the same max length
+        max_len = batch["input_ids"].size(1)
+        padded_labels = torch.full((len(labels), max_len), -100, dtype=torch.long)
+        for i, l in enumerate(labels):
+            padded_labels[i, : len(l)] = torch.tensor(l, dtype=torch.long)
+        batch["labels"] = padded_labels
+        return batch
