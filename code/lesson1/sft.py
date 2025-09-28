@@ -13,11 +13,10 @@ from transformers import (
     Trainer,
 )
 from utils import (
-    count_trainable_params,
     read_json_file,
     get_model_size_gb,
 )
-from prepare_dataset import tokenize_dataset
+from prepare_dataset import tokenize_dataset, DataCollatorForCausalLM
 from paths import CONFIG_FILE
 
 from typing import Optional
@@ -99,11 +98,15 @@ if assistant_only_masking:
     masked_tokens = sum(1 for label in labels if label == -100)
     total_tokens = len(labels)
 
+
+data_collator = DataCollatorForCausalLM(tokenizer)
+
 trainer = Trainer(
     model=peft_model,
     args=training_args,
     train_dataset=train,
     eval_dataset=validation,
+    data_collator=data_collator,
 )
 
 trainer.train()
