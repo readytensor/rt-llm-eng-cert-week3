@@ -1,7 +1,14 @@
 {
     "model_name": "meta-llama/Llama-3.2-1B-Instruct",
     "assistant_only_masking": true,
-    "use_qlora": false,
+    "use_qlora": true,
+    "dataset_config": {
+        "dataset_name": "NebulaSense/Legal_Clause_Instructions",
+        "instruction_column": "Instruction",
+        "input_column": "Input",
+        "output_column": "Output",
+        "max_length": 2048
+    },
     "quantization_config": {
         "load_in_4bit": true
     },
@@ -32,6 +39,6 @@
         "report_to": null,
         "remove_unused_columns": false,
         "dataloader_drop_last": true,
-        "gradient_checkpointing": true
+        "gradient_checkpointing": false
     }
 }

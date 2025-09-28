@@ -30,8 +30,9 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 login(HF_TOKEN)
 
 config = read_json_file(CONFIG_FILE)
-model_name = config["model_name"]
 
+model_name = config["model_name"]
+dataset_config = config["dataset_config"]
 quantization_config = config["quantization_config"]
 lora_config = config["lora_config"]
 use_qlora = config["use_qlora"]
@@ -67,30 +68,16 @@ def get_apply_peft(
     return get_peft_model(model, lora_config)
 
 
-# Load model without quantization for original parameter count
-model = AutoModelForCausalLM.from_pretrained(model_name)
-original_params = count_trainable_params(model)
-
-
 peft_model = get_apply_peft(model_name, lora_config, bnb_config)
 
-peft_params = count_trainable_params(peft_model)
 
-
-print(f"Original params: {original_params}")
-print(f"PEFT model params: {peft_params}")
-
-print(
-    f"Percentage of trainable params after PEFT: {peft_params / original_params * 100:.2f}%"
-)
-
-
-print(f"Original model size: {get_model_size_gb(model):.2f} GB")
 print(f"PEFT model size: {get_model_size_gb(peft_model):.2f} GB")
 
 
-tokenized_dataset, tokenizer = tokenize_dataset(
-    model_name, assistant_only_masking=assistant_only_masking
+train, validation, test, tokenizer = tokenize_dataset(
+    model_name=model_name,
+    assistant_only_masking=assistant_only_masking,
+    **dataset_config,
 )
 
 
@@ -105,7 +92,7 @@ training_args = TrainingArguments(**training_args)
 
 # Print masking statistics if using assistant-only masking
 if assistant_only_masking:
-    first_example = tokenized_dataset[0]
+    first_example = train[0]
     input_ids = first_example["input_ids"]
     labels = first_example["labels"]
 
@@ -115,7 +102,8 @@ if assistant_only_masking:
 trainer = Trainer(
     model=peft_model,
     args=training_args,
-    train_dataset=tokenized_dataset,
+    train_dataset=train,
+    eval_dataset=validation,
 )
 
 trainer.train()

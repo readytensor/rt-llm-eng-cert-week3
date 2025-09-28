@@ -1,59 +1,16 @@
 import os
 import sys
-import json
-from tqdm import tqdm
-from datasets import Dataset
+from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer
 from typing import List, Dict, Tuple
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from paths import DATASET_FILE
 
-
-def load_jsonl_dataset(file_path: str) -> List[Dict]:
-    """
-    Load a JSONL dataset from file.
-
-    Args:
-        file_path: Path to the JSONL file
-
-    Returns:
-        List of dictionaries containing the dataset
-    """
-    data = []
-    with open(file_path, "r", encoding="utf-8") as file:
-        for line in file:
-            data.append(json.loads(line.strip()))
-    return data
-
-
-def format_instruction_data(data_point: Dict) -> str:
-    """
-    Format a data point into instruction format for fine-tuning.
-
-    Args:
-        data_point: Dictionary with 'question' and 'output' keys
-
-    Returns:
-        Formatted instruction string
-    """
-    question = data_point["question"]
-    input = data_point["input"]
-    output = data_point["output"]
-
-    formatted_text = f"### Question\n{question}\n\n"
-
-    if input:
-        formatted_text += f"### Input\n{input}\n\n"
-
-    formatted_text += f"### Output\n{output}"
-
-    return formatted_text
-
-
-def prepare_dataset(file_path: str) -> Dataset:
+def prepare_dataset(
+    dataset_name: str, instruction_column: str, input_column: str, output_column: str
+) -> Tuple[Dataset, Dataset, Dataset]:
     """
     Load and prepare the dataset for fine-tuning.
 
@@ -63,18 +20,46 @@ def prepare_dataset(file_path: str) -> Dataset:
     Returns:
         HuggingFace Dataset object ready for training
     """
-    # Load raw data
-    raw_data = load_jsonl_dataset(file_path)
 
-    # Format each data point
-    formatted_data = []
-    for data_point in tqdm(raw_data, desc="Preparing dataset"):
-        formatted_text = format_instruction_data(data_point)
-        formatted_data.append({"text": formatted_text})
+    def format_instruction_data(data_point: Dict) -> str:
+        """
+        Format a data point into instruction format for fine-tuning.
 
-    # Create HuggingFace dataset
-    dataset = Dataset.from_list(formatted_data)
-    return dataset
+        Args:
+            data_point: Dictionary with 'instruction', 'input', and 'output' keys
+
+        Returns:
+            Formatted instruction string
+        """
+        instruction = data_point[instruction_column]
+        input = data_point[input_column]
+        output = data_point[output_column]
+
+        formatted_text = f"### Instruction\n{instruction}\n\n"
+
+        if input:
+            formatted_text += f"### Input\n{input}\n\n"
+
+        formatted_text += f"### Output\n{output}"
+
+        return {"text": formatted_text}
+
+    dataset = load_dataset(dataset_name)
+
+    train_dataset = dataset["train"] if "train" in dataset else None
+    validation_dataset = dataset["validation"] if "validation" in dataset else None
+    test_dataset = dataset["test"] if "test" in dataset else None
+
+    if train_dataset is not None:
+        train_dataset = train_dataset.map(format_instruction_data)
+
+    if validation_dataset is not None:
+        validation_dataset = validation_dataset.map(format_instruction_data)
+
+    if test_dataset is not None:
+        test_dataset = test_dataset.map(format_instruction_data)
+
+    return train_dataset, validation_dataset, test_dataset
 
 
 def apply_assistant_masking(
@@ -114,15 +99,19 @@ def apply_assistant_masking(
 
 def tokenize_dataset(
     model_name: str,
-    dataset_file: str = DATASET_FILE,
+    dataset_name: str,
+    instruction_column: str,
+    input_column: str,
+    output_column: str,
     assistant_only_masking: bool = True,
-) -> Tuple[Dataset, AutoTokenizer]:
+    max_length: int = 2048,
+) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
     """
     Load and prepare the dataset with tokenization and assistant-only masking.
 
     Args:
         model_name: Name of the model to use for tokenizer
-        dataset_file: Path to the dataset file
+        dataset_name: Name of the dataset to use
         assistant_only_masking: Whether to apply assistant-only masking
 
 
@@ -130,11 +119,12 @@ def tokenize_dataset(
         tuple: (tokenized_dataset, tokenizer)
     """
 
-    dataset = prepare_dataset(dataset_file)
-    print(f"Dataset loaded: {len(dataset)} examples")
-
-    print("\nFirst example:")
-    print(dataset[0]["text"])
+    train_dataset, validation_dataset, test_dataset = prepare_dataset(
+        dataset_name,
+        instruction_column=instruction_column,
+        input_column=input_column,
+        output_column=output_column,
+    )
 
     # Setup tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -147,7 +137,7 @@ def tokenize_dataset(
             texts_with_eos,
             truncation=True,
             padding=False,
-            max_length=512,
+            max_length=max_length,
             return_tensors=None,
             add_special_tokens=True,
         )
@@ -164,10 +154,24 @@ def tokenize_dataset(
         tokenized["labels"] = labels
         return tokenized
 
-    tokenized_dataset = dataset.map(
+    train = train_dataset.map(
         tokenize_and_mask_function,
         batched=True,
-        remove_columns=dataset.column_names,
+        remove_columns=train_dataset.column_names,
     )
+    validation = None
+    if validation_dataset is not None:
+        validation = validation_dataset.map(
+            tokenize_and_mask_function,
+            batched=True,
+            remove_columns=train_dataset.column_names,
+        )
+    test = None
+    if test_dataset is not None:
+        test = test_dataset.map(
+            tokenize_and_mask_function,
+            batched=True,
+            remove_columns=train_dataset.column_names,
+        )
 
-    return tokenized_dataset, tokenizer
+    return train, validation, test, tokenizer
