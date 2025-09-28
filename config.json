@@ -1,6 +1,6 @@
 {
-    "model_name": "microsoft/DialoGPT-small",
-    "save_model_name": "dialoGPT-small-legal-qlora",
+    "model_name": "openai-community/gpt2",
+    "save_model_name": "gpt2-legal-qlora",
     "assistant_only_masking": true,
     "use_qlora": true,
     "dataset_config": {
