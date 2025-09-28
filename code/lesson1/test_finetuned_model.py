@@ -156,55 +156,115 @@ def test_model_with_samples(model, tokenizer):
         print("-" * 80)
 
 
-def compare_with_base_model(base_model_name: str, adapter_model_name: str):
-    """Compare responses from base model vs fine-tuned model"""
+def interactive_testing(model, tokenizer):
+    """Interactive testing mode - ask questions and get real-time responses"""
 
     print("\n" + "=" * 80)
-    print("COMPARING BASE MODEL VS FINE-TUNED MODEL")
+    print("🎯 INTERACTIVE TESTING MODE")
     print("=" * 80)
+    print("Ask your fine-tuned model questions about legal topics!")
+    print("Commands:")
+    print("  - Type your question and press Enter")
+    print("  - Type 'quit', 'exit', or 'q' to stop")
+    print("  - Type 'help' for sample questions")
+    print("  - Type 'clear' to clear the screen")
+    print("-" * 80)
 
-    # Load base model
-    print("Loading base model...")
-    base_model = AutoModelForCausalLM.from_pretrained(
-        base_model_name, torch_dtype=torch.float16, device_map="auto"
-    )
-    base_tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+    sample_questions = [
+        "What are the key elements of a non-disclosure agreement?",
+        "Explain the difference between a contract and an agreement.",
+        "What should be included in a software licensing agreement?",
+        "Draft a simple liability clause for a consulting contract.",
+        "What are the essential clauses in an employment agreement?",
+        "How do I protect intellectual property in a partnership agreement?",
+        "What are the key terms in a service level agreement?",
+        "Explain force majeure clauses in contracts.",
+    ]
 
-    # Load fine-tuned model
-    print("Loading fine-tuned model...")
-    ft_model, ft_tokenizer = load_fine_tuned_model(base_model_name, adapter_model_name)
+    while True:
+        try:
+            # Get user input
+            print("\n" + "=" * 50)
+            user_input = input("🤔 Your question: ").strip()
 
-    # Test prompt
-    test_prompt = """<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+            # Handle commands
+            if user_input.lower() in ["quit", "exit", "q"]:
+                print("👋 Thanks for testing! Goodbye!")
+                break
 
-What are the essential clauses in a service agreement?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+            elif user_input.lower() == "help":
+                print("\n📝 Sample questions you can ask:")
+                for i, question in enumerate(sample_questions, 1):
+                    print(f"  {i}. {question}")
+                continue
+
+            elif user_input.lower() == "clear":
+                import os
+
+                os.system("cls" if os.name == "nt" else "clear")
+                print("🎯 INTERACTIVE TESTING MODE")
+                print("Ask your fine-tuned model questions about legal topics!")
+                continue
+
+            elif not user_input:
+                print("❓ Please enter a question or type 'help' for examples.")
+                continue
+
+            # Check if user wants to add context/input
+            context_input = input(
+                "📄 Additional context (optional, press Enter to skip): "
+            ).strip()
+
+            # Format the prompt
+            if context_input:
+                prompt = f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+
+{user_input}
+
+{context_input}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+"""
+            else:
+                prompt = f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+
+{user_input}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 """
 
-    print(f"\nTest Question: What are the essential clauses in a service agreement?")
-    print("\n" + "=" * 40)
-    print("BASE MODEL RESPONSE:")
-    print("=" * 40)
+            # Generate response
+            print("\n🤖 Thinking...")
+            print("-" * 50)
 
-    try:
-        base_response = generate_response(
-            base_model, base_tokenizer, test_prompt, max_new_tokens=200
-        )
-        print(base_response)
-    except Exception as e:
-        print(f"❌ Error with base model: {e}")
+            try:
+                response = generate_response(
+                    model, tokenizer, prompt, max_new_tokens=300
+                )
+                print(f"💡 Response:\n{response}")
 
-    print("\n" + "=" * 40)
-    print("FINE-TUNED MODEL RESPONSE:")
-    print("=" * 40)
+                # Ask if user wants to continue
+                print("\n" + "-" * 50)
+                continue_choice = (
+                    input("❓ Ask another question? (y/n/help): ").strip().lower()
+                )
 
-    try:
-        ft_response = generate_response(
-            ft_model, ft_tokenizer, test_prompt, max_new_tokens=200
-        )
-        print(ft_response)
-    except Exception as e:
-        print(f"❌ Error with fine-tuned model: {e}")
+                if continue_choice in ["n", "no"]:
+                    print("👋 Thanks for testing! Goodbye!")
+                    break
+                elif continue_choice == "help":
+                    print("\n📝 Sample questions you can ask:")
+                    for i, question in enumerate(sample_questions, 1):
+                        print(f"  {i}. {question}")
+
+            except Exception as e:
+                print(f"❌ Error generating response: {e}")
+                print("🔄 Please try again with a different question.")
+
+        except KeyboardInterrupt:
+            print("\n\n👋 Interrupted by user. Goodbye!")
+            break
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+            print("🔄 Please try again.")
 
 
 if __name__ == "__main__":
@@ -216,11 +276,29 @@ if __name__ == "__main__":
         # Load the fine-tuned model
         model, tokenizer = load_fine_tuned_model(base_model_name, adapter_model_name)
 
-        # Test with sample questions
-        test_model_with_samples(model, tokenizer)
+        # Ask user what they want to do
+        print("\n" + "=" * 60)
+        print("🎯 TESTING OPTIONS")
+        print("=" * 60)
+        print("1. Run predefined test cases")
+        print("2. Interactive testing (ask your own questions)")
+        print("3. Both")
 
-        # Optional: Compare with base model (uncomment if you want to see the difference)
-        # compare_with_base_model(base_model_name, adapter_model_name)
+        while True:
+            choice = input("\nChoose an option (1/2/3): ").strip()
+
+            if choice == "1":
+                test_model_with_samples(model, tokenizer)
+                break
+            elif choice == "2":
+                interactive_testing(model, tokenizer)
+                break
+            elif choice == "3":
+                test_model_with_samples(model, tokenizer)
+                interactive_testing(model, tokenizer)
+                break
+            else:
+                print("❌ Invalid choice. Please enter 1, 2, or 3.")
 
     except Exception as e:
         print(f"❌ Error loading model: {e}")
