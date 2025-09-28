@@ -173,6 +173,7 @@ def tokenize_dataset(
     # Setup tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token_id = tokenizer.eos_token_id
 
     # Tokenize dataset with assistant masking
     def tokenize_and_mask_function(examples):
@@ -271,7 +272,21 @@ class DataCollatorForCausalLM:
         labels = [f.pop("labels") for f in features]
 
         # This pads input_ids and attention_mask consistently
-        batch = self.tokenizer.pad(features, padding=True, return_tensors="pt")
+        batch = self.tokenizer.pad(
+            features,
+            padding=True,
+            return_tensors="pt",
+            pad_to_multiple_of=None,
+            return_attention_mask=True,
+        )
+
+        # Ensure pad token ID is valid
+        if self.tokenizer.pad_token_id >= len(self.tokenizer.get_vocab()):
+            print(
+                f"❌ Invalid pad_token_id: {self.tokenizer.pad_token_id} >= vocab_size {len(self.tokenizer.get_vocab())}"
+            )
+            # Fix by using eos_token_id
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
 
         # Now pad labels to the same max length
         max_len = batch["input_ids"].size(1)
