@@ -95,75 +95,16 @@ def generate_response(model, tokenizer, prompt: str, max_new_tokens: int = 256):
     return response
 
 
-def test_model_with_samples(model, tokenizer):
-    """Test the model with various legal questions"""
-
-    test_cases = [
-        {
-            "instruction": "What are the key elements of a non-disclosure agreement?",
-            "input": "",
-        },
-        {
-            "instruction": "Explain the difference between a contract and an agreement.",
-            "input": "",
-        },
-        {
-            "instruction": "What should be included in a software licensing agreement?",
-            "input": "For a SaaS application",
-        },
-        {
-            "instruction": "Draft a simple liability clause.",
-            "input": "For a consulting services contract",
-        },
-    ]
+def interactive_testing(ft_model, ft_tokenizer, base_model, base_tokenizer):
+    """Interactive testing mode - compare fine-tuned vs base model responses"""
 
     print("\n" + "=" * 80)
-    print("TESTING FINE-TUNED MODEL")
+    print("🎯 INTERACTIVE COMPARISON MODE")
     print("=" * 80)
-
-    for i, test_case in enumerate(test_cases, 1):
-        instruction = test_case["instruction"]
-        input_text = test_case["input"]
-
-        # Format the prompt using the same template as training
-        if input_text:
-            prompt = f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
-
-{instruction}
-
-{input_text}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-"""
-        else:
-            prompt = f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
-
-{instruction}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-"""
-
-        print(f"\n🔍 Test Case {i}:")
-        print(f"Instruction: {instruction}")
-        if input_text:
-            print(f"Input: {input_text}")
-        print("-" * 50)
-
-        try:
-            response = generate_response(model, tokenizer, prompt)
-            print(f"Response: {response}")
-        except Exception as e:
-            print(f"❌ Error generating response: {e}")
-
-        print("-" * 80)
-
-
-def interactive_testing(model, tokenizer):
-    """Interactive testing mode - ask questions and get real-time responses"""
-
-    print("\n" + "=" * 80)
-    print("🎯 INTERACTIVE TESTING MODE")
-    print("=" * 80)
-    print("Ask your fine-tuned model questions about legal topics!")
-    print("Commands:")
+    print("Ask questions and see responses from BOTH models:")
+    print("  🤖 Fine-tuned model (your trained model)")
+    print("  🔧 Base model (original Llama)")
+    print("\nCommands:")
     print("  - Type your question and press Enter")
     print("  - Type 'quit', 'exit', or 'q' to stop")
     print("  - Type 'help' for sample questions")
@@ -231,18 +172,31 @@ def interactive_testing(model, tokenizer):
 
 """
 
-            # Generate response
-            print("\n🤖 Thinking...")
-            print("-" * 50)
+            # Generate responses from both models
+            print("\n🤖 Generating responses from both models...")
+            print("=" * 80)
 
             try:
-                response = generate_response(
-                    model, tokenizer, prompt, max_new_tokens=300
+                # Fine-tuned model response
+                print("🤖 FINE-TUNED MODEL RESPONSE:")
+                print("-" * 40)
+                ft_response = generate_response(
+                    ft_model, ft_tokenizer, prompt, max_new_tokens=300
                 )
-                print(f"💡 Response:\n{response}")
+                print(ft_response)
+
+                print("\n" + "=" * 80)
+
+                # Base model response
+                print("🔧 BASE MODEL RESPONSE:")
+                print("-" * 40)
+                base_response = generate_response(
+                    base_model, base_tokenizer, prompt, max_new_tokens=300
+                )
+                print(base_response)
 
                 # Ask if user wants to continue
-                print("\n" + "-" * 50)
+                print("\n" + "=" * 80)
                 continue_choice = (
                     input("❓ Ask another question? (y/n/help): ").strip().lower()
                 )
@@ -268,40 +222,31 @@ def interactive_testing(model, tokenizer):
 
 
 if __name__ == "__main__":
-    print("🚀 Loading fine-tuned model from Hugging Face Hub...")
+    print("🚀 Loading models for comparison...")
     print(f"Base model: {base_model_name}")
-    print(f"Adapter model: {adapter_model_name}")
+    print(f"Fine-tuned adapter: {adapter_model_name}")
 
     try:
         # Load the fine-tuned model
-        model, tokenizer = load_fine_tuned_model(base_model_name, adapter_model_name)
+        print("\n📥 Loading fine-tuned model...")
+        ft_model, ft_tokenizer = load_fine_tuned_model(
+            base_model_name, adapter_model_name
+        )
 
-        # Ask user what they want to do
-        print("\n" + "=" * 60)
-        print("🎯 TESTING OPTIONS")
-        print("=" * 60)
-        print("1. Run predefined test cases")
-        print("2. Interactive testing (ask your own questions)")
-        print("3. Both")
+        # Load the base model
+        print("📥 Loading base model...")
+        base_model = AutoModelForCausalLM.from_pretrained(
+            base_model_name, torch_dtype=torch.float16, device_map="auto"
+        )
+        base_tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 
-        while True:
-            choice = input("\nChoose an option (1/2/3): ").strip()
+        print("✅ Both models loaded successfully!")
 
-            if choice == "1":
-                test_model_with_samples(model, tokenizer)
-                break
-            elif choice == "2":
-                interactive_testing(model, tokenizer)
-                break
-            elif choice == "3":
-                test_model_with_samples(model, tokenizer)
-                interactive_testing(model, tokenizer)
-                break
-            else:
-                print("❌ Invalid choice. Please enter 1, 2, or 3.")
+        # Start interactive comparison
+        interactive_testing(ft_model, ft_tokenizer, base_model, base_tokenizer)
 
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
+        print(f"❌ Error loading models: {e}")
         print("\nPossible solutions:")
         print("1. Make sure your model is pushed to Hugging Face Hub")
         print("2. Check your HF_USERNAME and save_model_name in config")
