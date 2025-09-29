@@ -11,6 +11,7 @@ from transformers import (
     BitsAndBytesConfig,
     TrainingArguments,
     Trainer,
+    EarlyStoppingCallback,
 )
 from utils import (
     read_json_file,
@@ -38,8 +39,8 @@ lora_config = config["lora_config"]
 use_qlora = config["use_qlora"]
 training_args = config["training_args"]
 save_model_name = config["save_model_name"]
-
 assistant_only_masking = config["assistant_only_masking"]
+early_stopping_config = config.get("early_stopping", {})
 
 
 bnb_config = None
@@ -103,12 +104,16 @@ if assistant_only_masking:
 
 data_collator = DataCollatorForCausalLM(tokenizer)
 
+if early_stopping_config:
+    early_stopping_callback = EarlyStoppingCallback(**early_stopping_config)
+
 trainer = Trainer(
     model=peft_model,
     args=training_args,
     train_dataset=train,
     eval_dataset=validation,
     data_collator=data_collator,
+    callbacks=[early_stopping_callback] if early_stopping_config else None,
 )
 
 trainer.train()
@@ -135,8 +140,8 @@ try:
     )  # Set private=True if you want private repo
     tokenizer.push_to_hub(adapter_model_name)
     print(
-        f"✅ Adapters successfully pushed to: https://huggingface.co/{adapter_model_name}"
+        f"Adapters successfully pushed to: https://huggingface.co/{adapter_model_name}"
     )
 except Exception as e:
-    print(f"❌ Error pushing to Hugging Face: {e}")
+    print(f"Error pushing to Hugging Face: {e}")
     print("Make sure you're logged in with: huggingface-cli login")

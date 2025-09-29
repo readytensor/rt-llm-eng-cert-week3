@@ -44,6 +44,12 @@
         "remove_unused_columns": false,
         "dataloader_drop_last": true,
         "gradient_checkpointing": false,
-        "max_grad_norm": 1.0
+        "max_grad_norm": 1.0,
+        "metric_for_best_model": "eval_loss",
+        "greater_is_better": false
+    },
+    "early_stopping": {
+        "early_stopping_patience": 2,
+        "early_stopping_threshold": 0.05
     }
 }
