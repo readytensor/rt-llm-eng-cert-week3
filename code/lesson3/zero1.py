@@ -16,6 +16,14 @@ from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 from utils import read_json_file
 from paths import CONFIG_FILE, DEEP_SPEED_ZERO1_CONFIG
 from lesson1.prepare_dataset import tokenize_dataset, DataCollatorForCausalLM
+from dotenv import load_dotenv
+from huggingface_hub import login
+
+load_dotenv()
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_USERNAME = os.getenv("HF_USERNAME")
+login(HF_TOKEN)
 
 
 def main(model_id: str, lora_config: dict, dataset_config: dict, training_args: dict):
