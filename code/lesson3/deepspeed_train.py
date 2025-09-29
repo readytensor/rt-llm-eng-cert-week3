@@ -40,7 +40,8 @@ def main(
     deepspeed_version: int,
 ):
     # Paths and configuration
-    output_dir = "./qlora-deepspeed-zero1"
+    output_dir = f"./qlora-deepspeed-zero{deepspeed_version}"
+    os.makedirs(output_dir, exist_ok=True)
     print(f"Starting training with model: {model_id}")
 
     assert deepspeed_version in [1, 2, 3], "DeepSpeed version must be 1, 2, or 3"
