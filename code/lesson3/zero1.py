@@ -3,15 +3,6 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Get local rank for DeepSpeed (0 = main process)
-LOCAL_RANK = int(os.environ.get("LOCAL_RANK", 0))
-
-
-def print_rank0(*args, **kwargs):
-    """Only print from rank 0 to avoid duplicate output"""
-    if LOCAL_RANK == 0:
-        print(*args, **kwargs)
-
 
 import torch
 import logging
@@ -58,16 +49,15 @@ login(HF_TOKEN)
 def main(model_id: str, lora_config: dict, dataset_config: dict, training_args: dict):
     # Paths and configuration
     output_dir = "./qlora-deepspeed-zero1"
-    print_rank0(f"🚀 Starting training with model: {model_id} (Rank {LOCAL_RANK})")
+    print(f"Starting training with model: {model_id}")
 
     # Write the config to a file
     ds_config_path = DEEP_SPEED_ZERO1_CONFIG
 
     # Load tokenizer
-    print_rank0("📝 Loading tokenizer...")
+    print("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.pad_token = tokenizer.eos_token
-    print_rank0("✅ Tokenizer loaded")
 
     # Configure quantization settings
     quantization_config = BitsAndBytesConfig(
@@ -75,11 +65,10 @@ def main(model_id: str, lora_config: dict, dataset_config: dict, training_args: 
     )
 
     # Load model with quantization
-    print_rank0("🤖 Loading model with quantization...")
+    print("Loading model with quantization...")
     model = AutoModelForCausalLM.from_pretrained(
         model_id, quantization_config=quantization_config
     )
-    print_rank0("✅ Model loaded")
 
     # Prepare the model for k-bit training
     model = prepare_model_for_kbit_training(model)
@@ -91,25 +80,19 @@ def main(model_id: str, lora_config: dict, dataset_config: dict, training_args: 
     )
 
     # Apply LoRA to the model
-    print_rank0("🔗 Applying LoRA...")
     model = get_peft_model(model, peft_config)
-    print_rank0("✅ LoRA applied")
+    print("LoRA applied")
 
-    # Load dataset only on rank 0 to avoid duplication
-    if LOCAL_RANK == 0:
-        print_rank0("📊 Loading and processing dataset...")
-        train, validation, test, tokenizer = tokenize_dataset(
-            model_id,
-            assistant_only_masking=True,
-            **dataset_config,
-        )
-        print_rank0(
-            f"✅ Dataset loaded - Train: {len(train)}, Val: {len(validation) if validation else 0}"
-        )
-    else:
-        # Other ranks wait for data to be shared
-        train, validation, test, tokenizer = None, None, None, None
-    # Define training arguments with DeepSpeed integration
+    # Load dataset
+    print("Loading and processing dataset...")
+    train, validation, test, tokenizer = tokenize_dataset(
+        model_id,
+        assistant_only_masking=True,
+        **dataset_config,
+    )
+    print(
+        f"Dataset loaded - Train: {len(train)}, Val: {len(validation) if validation else 0}"
+    )
     training_args = TrainingArguments(
         deepspeed=ds_config_path,
         **training_args,
@@ -124,19 +107,14 @@ def main(model_id: str, lora_config: dict, dataset_config: dict, training_args: 
         data_collator=DataCollatorForCausalLM(tokenizer),
     )
 
-    # Start training
-    print_rank0("🚀 Starting training...")
-    print_rank0("=" * 50)
     trainer.train()
-    print_rank0("=" * 50)
-    print_rank0("🎉 Training completed!")
 
     # Save the fine-tuned model
-    print_rank0("💾 Saving model...")
+    print("saving model...")
     model.save_pretrained(f"{output_dir}/final-model")
     tokenizer.save_pretrained(f"{output_dir}/final-model")
 
-    print_rank0(f"✅ Training complete! Model saved to {output_dir}/final-model")
+    print(f"✅ Training complete! Model saved to {output_dir}/final-model")
 
 
 if __name__ == "__main__":
