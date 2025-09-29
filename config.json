@@ -3,6 +3,7 @@
     "save_model_name": "llama-1b-legal-qlora",
     "assistant_only_masking": false,
     "use_qlora": true,
+    "deepspeed_version": 1,
     "dataset_config": {
         "dataset_name": "NebulaSense/Legal_Clause_Instructions",
         "instruction_column": "Instruction",
