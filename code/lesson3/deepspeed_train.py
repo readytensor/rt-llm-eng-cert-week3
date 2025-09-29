@@ -14,7 +14,12 @@ from transformers import (
 )
 from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 from utils import read_json_file
-from paths import CONFIG_FILE, DEEP_SPEED_ZERO1_CONFIG
+from paths import (
+    CONFIG_FILE,
+    DEEP_SPEED_ZERO1_CONFIG,
+    DEEP_SPEED_ZERO2_CONFIG,
+    DEEP_SPEED_ZERO3_CONFIG,
+)
 from lesson1.prepare_dataset import tokenize_dataset, DataCollatorForCausalLM
 from dotenv import load_dotenv
 from huggingface_hub import login
@@ -27,13 +32,25 @@ HF_USERNAME = os.getenv("HF_USERNAME")
 login(HF_TOKEN)
 
 
-def main(model_id: str, lora_config: dict, dataset_config: dict, training_args: dict):
+def main(
+    model_id: str,
+    lora_config: dict,
+    dataset_config: dict,
+    training_args: dict,
+    deepspeed_version: int,
+):
     # Paths and configuration
     output_dir = "./qlora-deepspeed-zero1"
     print(f"Starting training with model: {model_id}")
 
-    # Write the config to a file
-    ds_config_path = DEEP_SPEED_ZERO1_CONFIG
+    assert deepspeed_version in [1, 2, 3], "DeepSpeed version must be 1, 2, or 3"
+
+    if deepspeed_version == 1:
+        ds_config_path = DEEP_SPEED_ZERO1_CONFIG
+    elif deepspeed_version == 2:
+        ds_config_path = DEEP_SPEED_ZERO2_CONFIG
+    elif deepspeed_version == 3:
+        ds_config_path = DEEP_SPEED_ZERO3_CONFIG
 
     # Load tokenizer
     print("Loading tokenizer...")
@@ -104,4 +121,5 @@ if __name__ == "__main__":
     lora_config = config["lora_config"]
     dataset_config = config["dataset_config"]
     training_args = config["training_args"]
-    main(model_id, lora_config, dataset_config, training_args)
+    deepspeed_version = config["deepspeed_version"]
+    main(model_id, lora_config, dataset_config, training_args, deepspeed_version)
