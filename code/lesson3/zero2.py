@@ -85,7 +85,6 @@ def main():
         logging_steps=10,
         save_steps=200,
         per_device_train_batch_size=2,  # Explicit batch size per device
-        gradient_accumulation_steps=4,
         deepspeed=ds_config_path,
     )
 
