@@ -20,6 +20,13 @@ transformers_logger = logging.getLogger("transformers")
 transformers_logger.setLevel(logging.INFO)
 transformers_logger.addHandler(logging.StreamHandler(sys.stdout))
 
+from transformers.utils import logging as hf_logging
+
+# Ensure HuggingFace Trainer emits logs in DeepSpeed runs
+hf_logging.set_verbosity_info()
+hf_logging.enable_default_handler()
+hf_logging.enable_explicit_format()
+
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -40,6 +47,7 @@ load_dotenv()
 os.environ["TRANSFORMERS_VERBOSITY"] = "info"
 os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "0"
 os.environ["PYTHONUNBUFFERED"] = "1"
+os.environ["ACCELERATE_LOG_LEVEL"] = "info"
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_USERNAME = os.getenv("HF_USERNAME")
