@@ -16,6 +16,14 @@ from transformers import (
 )
 from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 from paths import DEEP_SPEED_ZERO2_CONFIG
+from dotenv import load_dotenv
+from huggingface_hub import login
+
+load_dotenv()
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_USERNAME = os.getenv("HF_USERNAME")
+login(HF_TOKEN)
 
 
 def main():
