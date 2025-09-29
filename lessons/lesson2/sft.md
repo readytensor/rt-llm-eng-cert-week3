@@ -1,7 +1,5 @@
 ![Supervised Fine-Tuning with TRL - Hero Image](sft-hero.webp)
 
---DIVIDER-----
-
 ---
 
 [⬅️ Previous - TBD](TBD)
@@ -18,227 +16,232 @@
 
 # The Foundation: Supervised Fine-Tuning in Practice
 
-Welcome to the hands-on implementation of supervised fine-tuning! In our previous lesson, we learned that language models are sophisticated classification systems. Now we'll put that understanding to work by building a complete fine-tuning pipeline.
+Imagine you're teaching a brilliant student who already knows vast amounts of information but doesn't quite understand how to follow instructions or respond appropriately in conversations. That's essentially what we're doing with supervised fine-tuning - taking a pre-trained language model and teaching it the art of instruction-following through carefully crafted examples.
 
-This lesson will take you through the entire process of preparing data, configuring training, and creating a specialized model. Instead of just showing you the final code, we'll explore what's happening at each step and why these choices matter for successful fine-tuning.
+In our previous lesson, we discovered that language models are sophisticated classification systems, predicting the next most likely token in a sequence. Now we're going to harness that prediction power and channel it into something incredibly useful: a model that can understand instructions, process context, and generate helpful responses.
 
-## What You'll Learn This Lesson
+The journey we're about to embark on mirrors how human learning works. Just as you might learn a new skill by studying examples, practicing with guidance, and gradually improving through feedback, our model will learn from thousands of instruction-response pairs, each one teaching it a little more about how to be a helpful assistant.
 
-By the end of this lesson, you'll have a deep understanding of:
+What makes this process fascinating is that we're not just throwing data at the model and hoping for the best. Every decision we make - from how we format our training examples to which parts of the conversation we focus the model's attention on - has been carefully designed to maximize learning efficiency while minimizing computational cost. This is the art and science of supervised fine-tuning.
 
-- How to prepare and structure datasets for instruction following
-- The tokenization process and why it's crucial for model training
-- Assistant-only masking: ensuring models learn to respond, not repeat
-- Padding strategies and data collation for efficient batch processing
-- Training with SFTTrainer and the magic happening under the hood
+## 🎥 Video: Complete Supervised Fine-Tuning Walkthrough
 
-Let's dive into the practical mechanics that make fine-tuning work! 🚀
+*[VIDEO PLACEHOLDER - This section will contain a comprehensive demonstration showing:]*
+
+*- Live coding of the complete fine-tuning pipeline from start to finish*
+*- Real-time explanation of each configuration decision and its impact*
+*- Watching training progress with loss curves and validation metrics*
+*- Before/after model behavior comparisons with actual examples*
+*- Common troubleshooting scenarios and debugging techniques*
+*- Performance optimization tips for different hardware setups*
+
+*The video will make the abstract concepts concrete by showing the actual implementation in action, complete with real data, training logs, and model outputs.*
 
 ## The Six Steps of Supervised Fine-Tuning
 
-Before we dive into implementation details, let's understand the six essential steps that make supervised fine-tuning successful. Each step builds upon the previous ones, creating a robust foundation for training instruction-following models.
+Think of supervised fine-tuning as preparing a gourmet meal. You wouldn't just throw random ingredients into a pot and hope for the best. Instead, you'd carefully select your ingredients, prepare them properly, combine them in the right order, and cook them with precise timing and temperature control. 
 
-Think of these as the essential ingredients in a recipe - skip one, and your model won't learn effectively. Master all six, and you'll have the tools to fine-tune any language model for your specific needs.
+Our fine-tuning process follows the same philosophy. We have six essential steps, each one building upon the previous ones like layers in a carefully constructed dish. Miss one step or rush through it carelessly, and the entire outcome suffers. But execute each step with understanding and precision, and you'll create something remarkable: a specialized AI assistant that can follow instructions with impressive accuracy.
 
 ### The Complete Pipeline Overview
 
 Here's what we're building:
-```
-Raw Data → Dataset Preparation → Model Loading & LoRA Setup → Tokenization → Assistant Masking → Padding → Training
-```
+![sft_flow.png](sft_flow.png)
 
-Each step transforms your data and configures your model to learn exactly what you want it to learn - no more, no less.
+This pipeline isn't just a technical process - it's a transformation journey. Raw conversational data enters on the left as unstructured text, and emerges on the right as a fine-tuned model that understands instructions, context, and appropriate responses. Each step along the way serves a specific purpose in this transformation, refining and shaping the data until it becomes the perfect teaching material for our model.
 
---DIVIDER--
+----
+## Step 1: Dataset Preparation - The Art of Teaching Through Examples
 
-## Step 1: Dataset Preparation - Structuring Data for Learning
+Imagine you're a teacher preparing lesson materials for a new student. You wouldn't just hand them a pile of random textbooks and say "figure it out." Instead, you'd carefully curate examples that demonstrate exactly the skills and behaviors you want them to learn. You'd organize these examples in a clear, consistent format that makes the learning objectives obvious.
 
-The foundation of any successful fine-tuning project is a well-prepared dataset. This isn't just about collecting conversations - it's about structuring them in a way that clearly communicates to the model what behavior you want to teach.
+This is precisely what we're doing in our first step. We're not just loading data - we're crafting a curriculum. Every conversation in our dataset becomes a lesson that teaches our model how to understand instructions and generate appropriate responses. The key insight here is that the model learns not just from the content of these conversations, but from their structure and format.
 
-### Understanding Conversation Structure
-
-When we fine-tune a model, we're essentially showing it examples of how to behave. Each data point in your dataset becomes a template that the model learns to follow. Here's what a typical training sample looks like:
+Our implementation embraces a philosophy of configuration-driven development. Rather than hardcoding specific dataset paths or column names into our code, we externalize these decisions into a configuration file. This might seem like a small detail, but it represents a fundamental shift in how we approach machine learning experiments.
 
 ```python
-# Raw data point
-data_point = {
-    "question": "What's the capital of France?",
-    "input": "",  # Optional additional context
-    "output": "The capital of France is Paris."
+# config.json
+{
+    "dataset_config": {
+        "dataset_name": "NebulaSense/Legal_Clause_Instructions",
+        "instruction_column": "Instruction", 
+        "input_column": "Input",
+        "output_column": "Output",
+        "max_length": 2048
+    }
 }
 ```
 
-But the model doesn't understand structured data - it only understands text sequences. So we need to convert this structured data into a single text string that the model can process.
+Why does this matter? Because experimentation is at the heart of successful fine-tuning. You might want to try different datasets, compare how various instruction formats affect performance, or adjust maximum sequence lengths based on your computational resources. With our configuration-driven approach, these experiments become as simple as editing a JSON file rather than diving into code.
 
-### The Instruction Format: Converting Structure to Text
+### The Magic of HuggingFace Integration
 
-This is where consistent formatting becomes crucial. We use a clear instruction format that helps the model understand the different parts of each example:
+One of the beautiful aspects of modern machine learning is how much infrastructure has been built to make our lives easier. HuggingFace has created an ecosystem where thousands of datasets are just a function call away. But more than convenience, this integration represents a shift toward reproducible, shareable research.
+
+When we call `load_dataset("NebulaSense/Legal_Clause_Instructions")`, we're not just downloading files - we're tapping into a curated, version-controlled dataset that others can use to reproduce our results. This is the kind of scientific rigor that makes machine learning research more reliable and collaborative.
 
 ```python
-def format_instruction_data(data_point):
-    """Format a data point into instruction format for fine-tuning."""
-    question = data_point["question"]
-    input_text = data_point["input"]
-    output = data_point["output"]
+from datasets import load_dataset
+
+def prepare_dataset(
+    dataset_name: str,
+    instruction_column: str,
+    input_column: str, 
+    output_column: str,
+    sample_size: Optional[int] = None,
+    validation_size: Optional[float] = None,
+    test_size: Optional[float] = None,
+) -> Tuple[Dataset, Dataset, Dataset]:
+    """Load and prepare dataset with automatic train/val/test splitting."""
     
-    formatted_text = f"### Question\n{question}\n\n"
+    # Load dataset from HuggingFace Hub
+    dataset = load_dataset(dataset_name)
+    
+    # Optional sampling for faster experimentation
+    if sample_size is not None:
+        dataset["train"] = dataset["train"].select(range(sample_size))
+    
+    # Automatic train/validation/test splitting
+    if validation_size is not None and test_size is not None:
+        val_plus_test_size = validation_size + test_size
+        split = dataset["train"].train_test_split(test_size=val_plus_test_size, seed=42)
+        # ... splitting logic continues
+```
+
+Notice how our function handles the practical realities of machine learning experimentation. The `sample_size` parameter acknowledges that you often want to test your pipeline on a smaller subset before committing to a full training run. The automatic train/validation/test splitting ensures that you always have proper evaluation sets, even when working with datasets that don't come pre-split.
+
+### The Language of Structure: Teaching Through Format
+
+Here's where we encounter one of the most elegant insights in supervised fine-tuning: structure is language. The way we format our training examples isn't just about organization - it's about teaching the model a new vocabulary for understanding conversations.
+
+Think about how you might teach someone to follow a recipe. You wouldn't just list ingredients and steps in a random order. Instead, you'd use clear section headers: "Ingredients," "Preparation," "Instructions." These headers do more than organize information - they create a mental framework that helps the reader understand what type of information to expect in each section.
+
+Our instruction format works the same way. When we use headers like `### Instruction`, `### Input`, and `### Output`, we're teaching the model to recognize different types of content and understand their relationships.
+
+```python
+def format_instruction_data(data_point: Dict) -> str:
+    """Format data into instruction format for fine-tuning."""
+    instruction = data_point[instruction_column]
+    input_text = data_point[input_column] 
+    output = data_point[output_column]
+    
+    formatted_text = f"### Instruction\n{instruction}\n\n"
     
     if input_text:
         formatted_text += f"### Input\n{input_text}\n\n"
     
     formatted_text += f"### Output\n{output}"
     
-    return formatted_text
+    return {"text": formatted_text}
 
-# Example output:
-# ### Question
-# What's the capital of France?
-# 
-# ### Output
-# The capital of France is Paris.
+# Apply formatting to entire dataset
+train_dataset = dataset["train"].map(
+    format_instruction_data, 
+    desc="Formatting train data"
+)
 ```
 
-This format uses clear section headers (`### Question`, `### Input`, `### Output`) that help the model understand the structure of instruction-following tasks.
+This consistent pattern - `### Instruction` → `### Input` (when relevant) → `### Output` - becomes the model's roadmap for understanding how conversations should flow. After seeing thousands of examples in this format, the model internalize this structure so deeply that it can generate responses that follow the same pattern even for entirely new instructions.
 
-### Preparing Your Dataset
+### The Psychology of Consistent Formatting
 
-Here's how to prepare a complete dataset for fine-tuning using our instruction format:
+You might wonder why we're so obsessive about formatting consistency. After all, humans can understand instructions presented in many different ways. We can adapt to various conversation styles, parse meaning from messy text, and infer context from incomplete information. Why can't our models do the same?
+
+The answer lies in how neural networks learn. Unlike humans, who bring years of world experience and contextual understanding to every conversation, our models start with only statistical patterns learned from text. They're incredibly good at recognizing patterns, but they need those patterns to be consistent and clear.
+
+When we use the same section headers across thousands of training examples, we're not just organizing information - we're creating a reliable signal that the model can latch onto. The `### Instruction` header becomes a trigger that tells the model "pay attention, here comes the task you need to understand." The `### Output` header signals "this is the type of response you should generate."
+
+This formatting consistency serves another crucial purpose: it focuses the model's learning. Without clear boundaries between instructions and responses, a model might learn to generate instructions instead of responses, or it might produce rambling outputs that include both the original question and the answer. Our structured format eliminates this ambiguity, creating a clear learning target that produces more reliable, focused responses.
+
+------
+## Step 2: The Art of Efficient Model Adaptation
+
+Now we arrive at one of the most ingenious innovations in modern fine-tuning: Parameter-Efficient Fine-Tuning, or PEFT. To understand why this matters, imagine you're a music teacher working with a student who already plays piano beautifully. Instead of making them relearn every song from scratch, you'd focus on teaching them just the specific techniques they need for a new musical style - perhaps some jazz chord progressions or classical fingering patterns.
+
+This is exactly what LoRA (Low-Rank Adaptation) does for language models. Instead of updating all billions of parameters in a large model, we add small "adapter" layers that learn the specific behaviors we want while keeping the original model frozen. It's like teaching new skills without forgetting old ones.
+
+Our implementation takes this concept and wraps it in a configuration-driven framework that makes experimentation effortless. The beauty of this approach is that changing from LoRA to QLoRA (quantized LoRA), switching models, or adjusting training parameters becomes as simple as editing a configuration file.
 
 ```python
-import json
-from datasets import Dataset
-from tqdm import tqdm
-
-def load_jsonl_dataset(file_path):
-    """Load a JSONL dataset from file."""
-    data = []
-    with open(file_path, "r", encoding="utf-8") as file:
-        for line in file:
-            data.append(json.loads(line.strip()))
-    return data
-
-def prepare_dataset(file_path):
-    """Load and prepare the dataset for fine-tuning."""
-    # Load raw data
-    raw_data = load_jsonl_dataset(file_path)
-    
-    # Format each data point
-    formatted_data = []
-    for data_point in tqdm(raw_data, desc="Preparing dataset"):
-        formatted_text = format_instruction_data(data_point)
-        formatted_data.append({"text": formatted_text})
-    
-    # Create HuggingFace dataset
-    dataset = Dataset.from_list(formatted_data)
-    return dataset
+# config.json
+{
+    "model_name": "meta-llama/Llama-3.2-1B-Instruct",
+    "use_qlora": true,
+    "quantization_config": {
+        "load_in_4bit": true
+    },
+    "lora_config": {
+        "r": 8,
+        "lora_alpha": 32,
+        "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],
+        "lora_dropout": 0.05,
+        "bias": "none"
+    }
+}
 ```
 
-The key insight here is that we're not just collecting data - we're teaching the model a specific instruction-following pattern. The model learns to recognize questions and generate appropriate responses in the `### Output` section.
+This configuration tells a story of careful optimization. The `use_qlora: true` setting indicates we're prioritizing memory efficiency over raw speed, perfect for training on consumer GPUs. The `r: 8` parameter controls the "rank" of our adaptation - essentially how much capacity we're giving our model to learn new behaviors. The `target_modules` list specifies exactly which parts of the transformer we want to adapt, focusing on the attention mechanisms where most of the model's reasoning happens.
 
-### Why Format Matters
+### The Elegance of Adaptive Loading
 
-Using a consistent instruction format isn't optional - it's critical for several reasons:
-
-**Clear Structure**: The section headers (`### Question`, `### Input`, `### Output`) create clear boundaries that help the model understand different parts of the instruction-following task.
-
-**Learning Focus**: By consistently placing the desired response in the `### Output` section, we train the model to generate responses only when it sees this pattern.
-
-**Instruction Following**: The formatting teaches the model to read the question, consider any additional input, and then provide a focused response in the output section.
-
---DIVIDER--
-
-## Step 2: Model Loading and LoRA Setup - Preparing for Efficient Training
-
-Before we can tokenize our data, we need to load our base model and configure it for parameter-efficient fine-tuning. This step is crucial because it determines how much memory we'll use and how efficiently we can train.
-
-### Choosing Between LoRA and QLoRA
-
-Before loading the model, you need to decide between two parameter-efficient approaches:
-
-- **LoRA**: Uses the full-precision model (16-bit) with adapter layers
-- **QLoRA**: Quantizes the base model to 4-bit and adds 16-bit adapter layers
-
-The choice depends on your available GPU memory:
-
-### Option 1: LoRA (More Memory, Potentially Better Quality)
-
-For LoRA, load the model in full precision:
-
-```python
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
-
-model_name = "meta-llama/Llama-3.2-1B-Instruct"
-
-# Load model in full precision for LoRA
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    device_map="auto",
-    torch_dtype=torch.bfloat16,
-    trust_remote_code=True
-)
-
-# Load the tokenizer
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
-```
-
-### Option 2: QLoRA (Less Memory, Still Great Results)
-
-For QLoRA, use 4-bit quantization:
-
-```python
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-import torch
-
-model_name = "meta-llama/Llama-3.2-1B-Instruct"
-
-# Configure 4-bit quantization for QLoRA
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
-
-# Load the model with quantization
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    quantization_config=bnb_config,
-    device_map="auto",
-    torch_dtype=torch.bfloat16,
-    trust_remote_code=True
-)
-
-# Load the tokenizer
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
-```
-
-### Setting Up the Adapter Configuration
-
-Regardless of whether you chose LoRA or QLoRA, the adapter configuration is the same:
+The real magic happens in our `get_apply_peft()` function, which embodies a key principle of good software design: hiding complexity behind simple interfaces. This function makes a sophisticated decision tree look effortless - it can load a model in full precision for LoRA, apply 4-bit quantization for QLoRA, or handle any other configuration we throw at it.
 
 ```python
 from peft import LoraConfig, get_peft_model
+from transformers import AutoModelForCausalLM, BitsAndBytesConfig
 
-# Configure LoRA
+def get_apply_peft(
+    model_name: str,
+    lora_config: LoraConfig,
+    qlora_config: Optional[BitsAndBytesConfig] = None,
+) -> torch.nn.Module:
+    """Load model and apply PEFT (LoRA/QLoRA) based on configuration."""
+    
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name, 
+        quantization_config=qlora_config,  # None for LoRA, BitsAndBytesConfig for QLoRA
+        device_map="auto"
+    )
+    
+    return get_peft_model(model, lora_config)
+
+# Configuration-driven setup
+bnb_config = None
+if use_qlora:
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=quantization_config["load_in_4bit"],
+        load_in_8bit=not quantization_config["load_in_4bit"],
+    )
+
 lora_config = LoraConfig(
-    r=8,                            # Rank of adaptation
-    lora_alpha=32,                  # Scaling parameter
-    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],  # Which layers to adapt
-    lora_dropout=0.05,              # Dropout for regularization
-    bias="none",
-    task_type="CAUSAL_LM"
+    **lora_config,  # Unpack from config
+    task_type="CAUSAL_LM",
 )
 
-# Apply LoRA to the model
-model = get_peft_model(model, lora_config)
-
-# Print trainable parameters
-model.print_trainable_parameters()
-# Output: trainable params: 294,912 || all params: 345,059,328 || trainable%: 0.085
+# Apply PEFT to model
+peft_model = get_apply_peft(model_name, lora_config, bnb_config)
 ```
+
+What's particularly elegant about this approach is how it handles the decision between LoRA and QLoRA. The `quantization_config` parameter can be `None` (for standard LoRA) or a `BitsAndBytesConfig` object (for QLoRA). The model loading function doesn't need to know which approach we're using - it simply applies whatever quantization configuration we provide. This kind of flexible design makes our code more maintainable and easier to extend as new quantization methods emerge.
+
+### The Professional Touch: Environment Variables and Security
+
+One mark of production-ready code is how it handles sensitive information. Rather than hardcoding API tokens or usernames directly into our scripts (a security nightmare), we use environment variables to keep credentials separate from code. This approach isn't just about security - it's about creating code that can work seamlessly across different environments and users.
+
+```python
+from dotenv import load_dotenv
+from huggingface_hub import login
+
+load_dotenv()
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_USERNAME = os.getenv("HF_USERNAME") 
+login(HF_TOKEN)
+
+# Model name for saving adapters
+adapter_model_name = f"{HF_USERNAME}/{save_model_name}"
+```
+
+This pattern exemplifies thoughtful software design. The `.env` file keeps sensitive tokens secure and out of version control, while the automatic login and model naming make sharing fine-tuned adapters effortless. When training completes, our adapters will be automatically uploaded to HuggingFace Hub with a name that clearly identifies both the creator and the model variant.
 
 ### Why Choose LoRA vs QLoRA?
 
@@ -307,31 +310,69 @@ print(f"Tokens: {tokens}")
 
 Even rare words like "quixotic" get broken down into subword pieces that the model recognizes. This subword tokenization is what allows models to handle any text, even words they've never seen before.
 
-### Tokenization in the Training Pipeline
+### Integrated Tokenization and Dataset Pipeline
 
-When preparing data for training, tokenization happens as part of the dataset preparation. Here's how our actual implementation works:
+Our implementation combines tokenization with dataset preparation in a single pipeline:
 
 ```python
-def tokenize_and_mask_function(examples):
-    # Add EOS token to each text
-    texts_with_eos = [text + tokenizer.eos_token for text in examples["text"]]
+def tokenize_dataset(
+    model_name: str,
+    dataset_name: str, 
+    instruction_column: str,
+    input_column: str,
+    output_column: str,
+    assistant_only_masking: bool = True,
+    max_length: int = 2048,
+    sample_size: Optional[int] = None,
+    validation_size: Optional[float] = None,
+    test_size: Optional[float] = None,
+) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
+    """Complete pipeline: load → format → tokenize → mask."""
     
-    # Tokenize the texts
-    tokenized = tokenizer(
-        texts_with_eos,
-        truncation=True,
-        padding=False,  # We'll handle padding during training
-        max_length=512,
-        return_tensors=None,
-        add_special_tokens=True,
+    # Step 1: Load and format dataset
+    train_dataset, validation_dataset, test_dataset = prepare_dataset(
+        dataset_name, instruction_column, input_column, output_column,
+        sample_size, validation_size, test_size
     )
     
-    # We'll add masking logic here (covered in next section)
-    tokenized["labels"] = tokenized["input_ids"].copy()
-    return tokenized
-
-# Apply to your dataset
-tokenized_dataset = dataset.map(tokenize_and_mask_function, batched=True)
+    # Step 2: Setup tokenizer with proper padding
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+    
+    # Step 3: Tokenization with masking
+    def tokenize_and_mask_function(examples):
+        texts_with_eos = [text + tokenizer.eos_token for text in examples["text"]]
+        tokenized = tokenizer(
+            texts_with_eos,
+            truncation=True,
+            padding=False,
+            max_length=max_length,
+            return_tensors=None,
+            add_special_tokens=True,
+        )
+        
+        # Apply assistant-only masking (covered in next section)
+        labels = []
+        for input_ids in tokenized["input_ids"]:
+            if assistant_only_masking:
+                masked_labels = apply_assistant_masking(input_ids, tokenizer)
+            else:
+                masked_labels = input_ids
+            labels.append(masked_labels)
+        
+        tokenized["labels"] = labels
+        return tokenized
+    
+    # Step 4: Apply to all dataset splits
+    train = train_dataset.map(
+        tokenize_and_mask_function, batched=True,
+        remove_columns=train_dataset.column_names,
+        desc="Processing train dataset"
+    )
+    # ... similar for validation and test
+    
+    return train, validation, test, tokenizer
 ```
 
 The key parameters here are:
@@ -537,52 +578,98 @@ These optimizations can reduce training time from hours to minutes for the same 
 
 --DIVIDER--
 
-## Step 6: Training with SFTTrainer - Bringing It All Together
+## Step 6: Configuration-Driven Training with Early Stopping
 
-Now we reach the culmination of our preparation work. SFTTrainer coordinates all the pieces we've built - the formatted dataset, tokenization, masking, and padding - into a seamless training process.
+Our implementation uses the standard Transformers `Trainer` with custom data collation and optional early stopping, all controlled through configuration.
 
-### The Magic of SFTTrainer
+### Configuration-Based Training Setup
 
-What makes SFTTrainer special is how it handles the complexity of instruction fine-tuning automatically:
+All training parameters are defined in `config.json`:
 
 ```python
-from trl import SFTTrainer
-from transformers import TrainingArguments
-from peft import LoraConfig
+# config.json
+{
+    "training_args": {
+        "output_dir": "./checkpoints",
+        "per_device_train_batch_size": 4,
+        "gradient_accumulation_steps": 4,
+        "num_train_epochs": 3,
+        "learning_rate": 2e-4,
+        "logging_steps": 4,
+        "save_strategy": "steps",
+        "save_steps": 50,
+        "eval_strategy": "steps",
+        "eval_steps": 50,
+        "max_grad_norm": 1.0,
+        "load_best_model_at_end": true,
+        "metric_for_best_model": "eval_loss"
+    },
+    "early_stopping": {
+        "early_stopping_patience": 3,
+        "early_stopping_threshold": 0.01
+    }
+}
+```
 
-# Configure LoRA for efficient training
-lora_config = LoraConfig(
-    r=64,                    # Rank of adaptation
-    lora_alpha=16,           # Scaling parameter
-    target_modules=["q_proj", "v_proj"],  # Which layers to adapt
-    lora_dropout=0.05,       # Dropout for regularization
-    bias="none",
-    task_type="CAUSAL_LM"
-)
+### Custom Data Collator for Efficient Padding
 
-# Set up training parameters
-training_args = TrainingArguments(
-    output_dir="./sft-model",
-    per_device_train_batch_size=4,
-    gradient_accumulation_steps=4,
-    learning_rate=2e-4,
-    max_steps=1000,
-    logging_steps=10,
-    save_steps=200,
-    optim="paged_adamw_8bit",
-    fp16=True,
-)
+Instead of using a generic data collator, we implement custom padding logic:
 
-# Initialize the trainer
-trainer = SFTTrainer(
-    model=model,
-    train_dataset=dataset,
-    tokenizer=tokenizer,
-    peft_config=lora_config,
+```python
+class DataCollatorForCausalLM:
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+    
+    def __call__(self, features):
+        # Remove labels before padding
+        labels = [f.pop("labels") for f in features]
+        
+        # Pad input_ids and attention_mask consistently
+        batch = self.tokenizer.pad(features, padding=True, return_tensors="pt")
+        
+        # Pad labels to same max length with -100 (ignored in loss)
+        max_len = batch["input_ids"].size(1)
+        padded_labels = torch.full((len(labels), max_len), -100, dtype=torch.long)
+        for i, l in enumerate(labels):
+            padded_labels[i, : len(l)] = torch.tensor(l, dtype=torch.long)
+        batch["labels"] = padded_labels
+        return batch
+
+data_collator = DataCollatorForCausalLM(tokenizer)
+```
+
+### Training with Early Stopping
+
+The training setup integrates early stopping and configuration management:
+
+```python
+from transformers import Trainer, TrainingArguments, EarlyStoppingCallback
+
+# Load all configuration
+config = read_json_file(CONFIG_FILE)
+training_args = config["training_args"]
+early_stopping_config = config.get("early_stopping", {})
+
+# Setup training arguments
+training_args = TrainingArguments(**training_args)
+
+# Setup early stopping callback if configured
+callbacks = []
+if early_stopping_config:
+    callbacks.append(EarlyStoppingCallback(**early_stopping_config))
+
+# Initialize trainer
+trainer = Trainer(
+    model=peft_model,
     args=training_args,
-    max_seq_length=1024,
-    packing=True,
+    train_dataset=train,
+    eval_dataset=validation,
+    data_collator=data_collator,
+    callbacks=callbacks,
 )
+
+# Start training
+trainer.train()
 ```
 
 ### What Happens During Training
@@ -666,25 +753,82 @@ You can monitor:
 - Memory usage
 - Training speed (tokens per second)
 
-### Saving and Sharing Your Model
+### Automatic Model Saving and Sharing
 
-After training completes, save your results:
+Our implementation automatically saves adapters locally and pushes them to HuggingFace Hub:
 
 ```python
-# Save the LoRA adapters
-trainer.model.save_pretrained("./my-sft-model")
-tokenizer.save_pretrained("./my-sft-model")
+# After training completes, save and push adapters
+print("SAVING AND PUSHING ADAPTERS")
 
-# Push to Hugging Face Hub for sharing
-trainer.push_to_hub("my-username/my-sft-model")
+# Generate model name from config
+adapter_model_name = f"{HF_USERNAME}/{save_model_name}"
 
-# Load for inference later
-from peft import PeftModel
-base_model = AutoModelForCausalLM.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
-model = PeftModel.from_pretrained(base_model, "./my-sft-model")
+# Save adapters locally first
+local_adapter_path = "final_adapters"
+peft_model.save_pretrained(local_adapter_path)
+tokenizer.save_pretrained(local_adapter_path)
+
+print(f"Adapters saved locally to: {local_adapter_path}")
+
+# Push to Hugging Face Hub with error handling
+try:
+    peft_model.push_to_hub(adapter_model_name, private=False)
+    tokenizer.push_to_hub(adapter_model_name)
+    print(f"✅ Adapters successfully pushed to: https://huggingface.co/{adapter_model_name}")
+except Exception as e:
+    print(f"❌ Error pushing to Hugging Face: {e}")
+    print("Make sure you're logged in with: huggingface-cli login")
 ```
 
-The beauty of LoRA is that your adapters are tiny (typically <100MB) compared to the full model (several GB), making sharing and deployment much easier.
+### Complete Configuration Example
+
+Here's a complete `config.json` that brings everything together:
+
+```json
+{
+    "model_name": "meta-llama/Llama-3.2-1B-Instruct",
+    "save_model_name": "llama-1b-legal-qlora",
+    "assistant_only_masking": false,
+    "use_qlora": true,
+    "dataset_config": {
+        "dataset_name": "NebulaSense/Legal_Clause_Instructions",
+        "instruction_column": "Instruction",
+        "input_column": "Input", 
+        "output_column": "Output",
+        "max_length": 2048
+    },
+    "quantization_config": {
+        "load_in_4bit": true
+    },
+    "lora_config": {
+        "r": 8,
+        "lora_alpha": 32,
+        "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],
+        "lora_dropout": 0.05,
+        "bias": "none"
+    },
+    "training_args": {
+        "output_dir": "./checkpoints",
+        "per_device_train_batch_size": 4,
+        "gradient_accumulation_steps": 4,
+        "num_train_epochs": 3,
+        "learning_rate": 2e-4,
+        "logging_steps": 4,
+        "save_strategy": "steps",
+        "save_steps": 50,
+        "eval_strategy": "steps",
+        "eval_steps": 50,
+        "max_grad_norm": 1.0,
+        "load_best_model_at_end": true,
+        "metric_for_best_model": "eval_loss"
+    },
+    "early_stopping": {
+        "early_stopping_patience": 3,
+        "early_stopping_threshold": 0.01
+    }
+}
+```
 
 --DIVIDER--
 
@@ -736,16 +880,17 @@ This integrated approach delivers measurable benefits:
 
 ## Key Takeaways
 
-- **Dataset preparation sets the foundation** - proper instruction formatting and structure determine what your model learns
-- **Choose between LoRA and QLoRA based on your GPU memory** - LoRA for simplicity, QLoRA for maximum memory efficiency
-- **Tokenization bridges human and machine understanding** - the right tokenizer and format are crucial for effective learning  
-- **Assistant-only masking focuses learning** - models learn to respond appropriately rather than memorize entire conversations
-- **Efficient padding maximizes resources** - smart batching dramatically improves training efficiency
-- **SFTTrainer orchestrates everything** - it coordinates all components into a seamless, optimized training process
+- **Configuration-driven development** - using `config.json` makes experiments reproducible and easy to modify without changing code
+- **Integrated pipeline approach** - our `tokenize_dataset()` function combines loading, formatting, tokenization, and masking in one step
+- **Flexible LoRA/QLoRA setup** - the `get_apply_peft()` function handles both approaches based on configuration
+- **Custom data collation** - implementing `DataCollatorForCausalLM` gives precise control over padding and label handling
+- **Early stopping prevents overfitting** - monitoring validation loss and stopping when improvement plateaus saves time and improves generalization
+- **Automatic model sharing** - built-in HuggingFace Hub integration makes sharing fine-tuned adapters seamless
+- **Environment variable integration** - using `.env` files keeps sensitive tokens secure while enabling automated workflows
 
-Understanding these six steps gives you the foundation to fine-tune any language model effectively. Each component serves a specific purpose, but their real power emerges when they work together in harmony.
+This production-ready implementation gives you a complete fine-tuning pipeline that's both flexible and robust. The configuration-driven approach means you can experiment with different models, datasets, and training parameters by simply editing JSON files.
 
-In our next lesson, we'll explore advanced techniques that build on this foundation: parameter-efficient fine-tuning methods, training optimization strategies, and how to evaluate your fine-tuned models effectively.
+In our next lesson, we'll explore advanced optimization techniques and evaluation methods that build on this solid foundation.
 
 ---
 
