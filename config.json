@@ -46,7 +46,11 @@
         "max_grad_norm": 1.0,
         "metric_for_best_model": "eval_loss",
         "greater_is_better": false,
-        "fp16": true
+        "fp16": true,
+        "logging_dir": "./logs",
+        "logging_first_step": true,
+        "log_level": "info",
+        "disable_tqdm": false
     },
     "early_stopping": {
         "early_stopping_patience": 2,
