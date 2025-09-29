@@ -5,28 +5,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 import torch
-import logging
-
-# Configure logging to show HuggingFace training logs
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO,
-    force=True,  # Override any existing handlers
-)
-
-# Ensure transformers logs are visible
-transformers_logger = logging.getLogger("transformers")
-transformers_logger.setLevel(logging.INFO)
-transformers_logger.addHandler(logging.StreamHandler(sys.stdout))
-
-from transformers.utils import logging as hf_logging
-
-# Ensure HuggingFace Trainer emits logs in DeepSpeed runs
-hf_logging.set_verbosity_info()
-hf_logging.enable_default_handler()
-hf_logging.enable_explicit_format()
-
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -43,11 +21,6 @@ from huggingface_hub import login
 
 load_dotenv()
 
-# Force logging to be visible
-os.environ["TRANSFORMERS_VERBOSITY"] = "info"
-os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "0"
-os.environ["PYTHONUNBUFFERED"] = "1"
-os.environ["ACCELERATE_LOG_LEVEL"] = "info"
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_USERNAME = os.getenv("HF_USERNAME")
@@ -122,7 +95,7 @@ def main(model_id: str, lora_config: dict, dataset_config: dict, training_args: 
     model.save_pretrained(f"{output_dir}/final-model")
     tokenizer.save_pretrained(f"{output_dir}/final-model")
 
-    print(f"✅ Training complete! Model saved to {output_dir}/final-model")
+    print(f"Training complete! Model saved to {output_dir}/final-model")
 
 
 if __name__ == "__main__":
