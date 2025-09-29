@@ -87,4 +87,4 @@ if __name__ == "__main__":
     lora_config = config["lora_config"]
     dataset_config = config["dataset_config"]
     training_args = config["training_args"]
-    main(model_id, lora_config, dataset_config)
+    main(model_id, lora_config, dataset_config, training_args)
