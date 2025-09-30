@@ -13,7 +13,7 @@ from transformers import (
     BitsAndBytesConfig,
 )
 from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
-from utils import read_json_file
+from utils import read_json_file, push_to_hub
 from paths import (
     CONFIG_FILE,
     DEEP_SPEED_ZERO1_CONFIG,
@@ -114,6 +114,10 @@ def main(
     tokenizer.save_pretrained(f"{output_dir}/final-model")
 
     print(f"Training complete! Model saved to {output_dir}/final-model")
+
+    model_name = f"{model_id}-deepspeed-zero{deepspeed_version}"
+
+    push_to_hub(model, tokenizer, model_name, HF_USERNAME)
 
 
 if __name__ == "__main__":

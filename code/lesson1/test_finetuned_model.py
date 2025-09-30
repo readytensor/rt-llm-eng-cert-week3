@@ -8,10 +8,9 @@ import torch
 from dotenv import load_dotenv
 from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import PeftModel
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import read_json_file
+from utils import read_json_file, load_fine_tuned_model
 from paths import CONFIG_FILE
 
 # Load environment variables
@@ -25,29 +24,6 @@ config = read_json_file(CONFIG_FILE)
 base_model_name = config["model_name"]
 save_model_name = config["save_model_name"]
 adapter_model_name = f"{HF_USERNAME}/{save_model_name}"
-
-
-def load_fine_tuned_model(base_model_name: str, adapter_model_name: str):
-    """
-    Load a fine-tuned model with LoRA adapters from Hugging Face Hub
-
-    Args:
-        base_model_name: Original model name (e.g., "meta-llama/Llama-3.2-1B-Instruct")
-        adapter_model_name: Your adapter model name (e.g., "username/model-name")
-    """
-    print(f"Loading base model: {base_model_name}")
-    base_model = AutoModelForCausalLM.from_pretrained(
-        base_model_name, torch_dtype=torch.float16, device_map="auto"
-    )
-
-    print(f"Loading tokenizer from: {adapter_model_name}")
-    tokenizer = AutoTokenizer.from_pretrained(adapter_model_name)
-
-    print(f"Loading LoRA adapters from: {adapter_model_name}")
-    model = PeftModel.from_pretrained(base_model, adapter_model_name)
-
-    print("✅ Fine-tuned model loaded successfully!")
-    return model, tokenizer
 
 
 def generate_response(model, tokenizer, prompt: str, max_new_tokens: int = 256):

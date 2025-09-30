@@ -16,7 +16,9 @@ from transformers import (
 from utils import (
     read_json_file,
     get_model_size_gb,
+    push_to_hub,
 )
+
 from prepare_dataset import tokenize_dataset, DataCollatorForCausalLM
 from paths import CONFIG_FILE
 
@@ -123,8 +125,6 @@ print("\n" + "=" * 50)
 print("SAVING AND PUSHING ADAPTERS")
 print("=" * 50)
 
-# Define your Hugging Face model name
-adapter_model_name = f"{HF_USERNAME}/{save_model_name}"  # Change this to your username
 
 # Save adapters locally first
 local_adapter_path = "final_adapters"
@@ -133,15 +133,4 @@ tokenizer.save_pretrained(local_adapter_path)
 
 print(f"Adapters saved locally to: {local_adapter_path}")
 
-# Push to Hugging Face Hub
-try:
-    peft_model.push_to_hub(
-        adapter_model_name, private=False
-    )  # Set private=True if you want private repo
-    tokenizer.push_to_hub(adapter_model_name)
-    print(
-        f"Adapters successfully pushed to: https://huggingface.co/{adapter_model_name}"
-    )
-except Exception as e:
-    print(f"Error pushing to Hugging Face: {e}")
-    print("Make sure you're logged in with: huggingface-cli login")
+push_to_hub(peft_model, tokenizer, save_model_name, HF_USERNAME)
