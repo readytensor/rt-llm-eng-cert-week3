@@ -117,14 +117,12 @@ def main(
     trainer.train()
 
     # Save the fine-tuned model
-    print("saving model...")
     model.save_pretrained(f"{output_dir}/final-model")
     tokenizer.save_pretrained(f"{output_dir}/final-model")
 
     print(f"Training complete! Model saved to {output_dir}/final-model")
 
     model_name = f"{save_model_name}-deepspeed-zero{deepspeed_version}"
-    print(HF_USERNAME, HF_TOKEN)
 
     if is_main_process():
         push_to_hub(model, tokenizer, model_name, HF_USERNAME)
