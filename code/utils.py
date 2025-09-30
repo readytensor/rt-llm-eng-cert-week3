@@ -1,6 +1,8 @@
 import torch
 import os
 import json
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from peft import PeftModel
 
 
 def count_trainable_params(model: torch.nn.Module) -> int:
@@ -66,3 +68,42 @@ def get_last_checkpoint_path(checkpoints_dir: str) -> str:
         ]
     )
     return os.path.join(checkpoints_dir, f"checkpoint-{checkpoints[-1]}")
+
+
+def push_to_hub(
+    model: torch.nn.Module, tokenizer: AutoTokenizer, model_name: str, hf_username: str
+):
+    """
+    Push a model and tokenizer to Hugging Face Hub.
+    """
+    model_id = f"{hf_username}/{model_name}"
+    try:
+        model.push_to_hub(model_id, private=False)
+        tokenizer.push_to_hub(model_id)
+        print(f"Adapters successfully pushed to: https://huggingface.co/{model_id}")
+    except Exception as e:
+        print(f"Error pushing to Hugging Face: {e}")
+        print("Make sure you're logged in with: huggingface-cli login")
+
+
+def load_fine_tuned_model(base_model_name: str, adapter_model_name: str):
+    """
+    Load a fine-tuned model with LoRA adapters from Hugging Face Hub
+
+    Args:
+        base_model_name: Original model name (e.g., "meta-llama/Llama-3.2-1B-Instruct")
+        adapter_model_name: Your adapter model name (e.g., "username/model-name")
+    """
+    print(f"Loading base model: {base_model_name}")
+    base_model = AutoModelForCausalLM.from_pretrained(
+        base_model_name, torch_dtype=torch.float16, device_map="auto"
+    )
+
+    print(f"Loading tokenizer from: {adapter_model_name}")
+    tokenizer = AutoTokenizer.from_pretrained(adapter_model_name)
+
+    print(f"Loading LoRA adapters from: {adapter_model_name}")
+    model = PeftModel.from_pretrained(base_model, adapter_model_name)
+
+    print("✅ Fine-tuned model loaded successfully!")
+    return model, tokenizer
