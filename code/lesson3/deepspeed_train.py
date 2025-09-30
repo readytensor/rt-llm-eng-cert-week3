@@ -38,6 +38,7 @@ def main(
     dataset_config: dict,
     training_args: dict,
     deepspeed_version: int,
+    save_model_name: str,
 ):
     # Paths and configuration
     output_dir = f"./qlora-deepspeed-zero{deepspeed_version}"
@@ -115,7 +116,7 @@ def main(
 
     print(f"Training complete! Model saved to {output_dir}/final-model")
 
-    model_name = f"{model_id}-deepspeed-zero{deepspeed_version}"
+    model_name = f"{save_model_name}-deepspeed-zero{deepspeed_version}"
 
     push_to_hub(model, tokenizer, model_name, HF_USERNAME)
 
@@ -127,4 +128,12 @@ if __name__ == "__main__":
     dataset_config = config["dataset_config"]
     training_args = config["training_args"]
     deepspeed_version = config["deepspeed_version"]
-    main(model_id, lora_config, dataset_config, training_args, deepspeed_version)
+    save_model_name = config["save_model_name"]
+    main(
+        model_id,
+        lora_config,
+        dataset_config,
+        training_args,
+        deepspeed_version,
+        save_model_name,
+    )
