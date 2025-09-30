@@ -1,6 +1,6 @@
 datasets>=4.0.0
 peft>=0.17.1
-torch==2.5.1
+torch>=2.8.0
 transformers>=4.56.1
 trl>=0.23.0
 bitsandbytes>=0.42.0
