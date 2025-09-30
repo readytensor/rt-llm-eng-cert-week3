@@ -5,6 +5,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 import torch
+import torch.distributed as dist
+
+
+def is_main_process():
+    return not dist.is_available() or not dist.is_initialized() or dist.get_rank() == 0
+
+
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -118,7 +125,8 @@ def main(
 
     model_name = f"{save_model_name}-deepspeed-zero{deepspeed_version}"
 
-    push_to_hub(model, tokenizer, model_name, HF_USERNAME)
+    if is_main_process():
+        push_to_hub(model, tokenizer, model_name, HF_USERNAME)
 
 
 if __name__ == "__main__":
