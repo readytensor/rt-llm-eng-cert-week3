@@ -127,7 +127,7 @@ print("=" * 50)
 
 
 # Save adapters locally first
-local_adapter_path = "final_adapters"
+local_adapter_path = "model-adapters"
 peft_model.save_pretrained(local_adapter_path)
 tokenizer.save_pretrained(local_adapter_path)
 

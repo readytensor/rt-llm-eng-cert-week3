@@ -71,14 +71,18 @@ def get_last_checkpoint_path(checkpoints_dir: str) -> str:
 
 
 def push_to_hub(
-    model: torch.nn.Module, tokenizer: AutoTokenizer, model_name: str, hf_username: str
+    model: PeftModel, tokenizer: AutoTokenizer, model_name: str, hf_username: str
 ):
     """
     Push a model and tokenizer to Hugging Face Hub.
     """
     model_id = f"{hf_username}/{model_name}"
     try:
-        model.push_to_hub(model_id, private=False)
+        model.push_to_hub(f"{model_id}-adapters", private=False)
+
+        merged_model = model.merge_and_unload()
+        merged_model.push_to_hub(model_id, private=False)
+
         tokenizer.push_to_hub(model_id)
         print(f"Adapters successfully pushed to: https://huggingface.co/{model_id}")
     except Exception as e:
