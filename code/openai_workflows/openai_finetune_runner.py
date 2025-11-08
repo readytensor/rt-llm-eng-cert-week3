@@ -52,13 +52,18 @@ def create_finetune_job(
         validation_file=validation_file_id,
         model=base_model,
         suffix=suffix,
+        hyperparameters={
+            "n_epochs": 1,
+            "learning_rate_multiplier": 1,
+            "batch_size": 8,
+        },
     )
 
     print(f"✅ Fine-tune job created: {job.id}")
     return job
 
 
-def monitor_finetune_job(job_id, refresh_interval=30):
+def monitor_finetune_job(job_id, refresh_interval=60):
     """Monitor job progress until completion."""
     print(f"📊 Monitoring fine-tune job: {job_id}")
     while True:
@@ -68,7 +73,8 @@ def monitor_finetune_job(job_id, refresh_interval=30):
 
         if status in ("succeeded", "failed", "cancelled"):
             print(
-                f"\n🏁 Job {status.upper()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                f"\n🏁 Job {status.upper()} at "
+                f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
             if status == "succeeded":
                 print(f"✅ Fine-tuned model ID: {job.fine_tuned_model}")
