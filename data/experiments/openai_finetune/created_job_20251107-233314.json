@@ -1,0 +1,44 @@
+{
+  "id": "ftjob-Zj1REVa2xpXe58Q7YfsMCyRn",
+  "created_at": 1762587194,
+  "error": {
+    "code": null,
+    "message": null,
+    "param": null
+  },
+  "fine_tuned_model": null,
+  "finished_at": null,
+  "hyperparameters": {
+    "batch_size": "auto",
+    "learning_rate_multiplier": "auto",
+    "n_epochs": "auto"
+  },
+  "model": "gpt-4o-mini-2024-07-18",
+  "object": "fine_tuning.job",
+  "organization_id": "org-ubwSenYDCJNhLY7lnu5SwMqp",
+  "result_files": [],
+  "seed": 642977911,
+  "status": "validating_files",
+  "trained_tokens": null,
+  "training_file": "file-1A1ydGMrTMoxZobibnLco7",
+  "validation_file": "file-8MsbQb8YRq9UVymzUnRJey",
+  "estimated_finish": null,
+  "integrations": [],
+  "metadata": null,
+  "method": {
+    "type": "supervised",
+    "dpo": null,
+    "reinforcement": null,
+    "supervised": {
+      "hyperparameters": {
+        "batch_size": "auto",
+        "learning_rate_multiplier": "auto",
+        "n_epochs": "auto"
+      }
+    }
+  },
+  "user_provided_suffix": "samsum-ft",
+  "usage_metrics": null,
+  "shared_with_openai": false,
+  "eval_id": null
+}
