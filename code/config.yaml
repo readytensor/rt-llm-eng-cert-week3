@@ -7,6 +7,20 @@ tokenizer_type: meta-llama/Llama-3.2-1B-Instruct
 # ==============================================
 # Dataset
 # ==============================================
+dataset:
+  name: knkarthick/samsum
+  cache_dir: ../data/datasets
+  field_map:
+    input: dialogue
+    output: summary
+  type: completion
+  splits:
+    train: 200
+    validation: 200
+    test: 200
+  seed: 42
+
+# This is for Axolotl
 datasets:
   - path: knkarthick/samsum
     cache_dir: ../data/datasets
