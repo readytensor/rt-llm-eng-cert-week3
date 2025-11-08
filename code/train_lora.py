@@ -115,6 +115,7 @@ def train_model(cfg, model, tokenizer, train_data, val_data):
     args = TrainingArguments(
         output_dir=output_dir,
         num_train_epochs=cfg["num_epochs"],
+        max_steps=cfg.get("max_steps", 500),
         per_device_train_batch_size=cfg["batch_size"],
         per_device_eval_batch_size=cfg["batch_size"],
         gradient_accumulation_steps=cfg["gradient_accumulation_steps"],
@@ -158,7 +159,6 @@ def main():
 
     # Load dataset
     train_data, val_data, _ = load_and_prepare_dataset(cfg)
-
     # Reuse unified model setup (quantization + LoRA)
     model, tokenizer = setup_model_and_tokenizer(cfg, use_4bit=True, use_lora=True)
 
