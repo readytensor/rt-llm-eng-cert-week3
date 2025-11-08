@@ -45,24 +45,24 @@ def select_subset(dataset, n_samples, seed=42):
     
     return dataset.shuffle(seed=seed).select(range(n_samples))
 
-
 def load_and_prepare_dataset(cfg):
     """
     Load dataset splits according to configuration.
+    Ensures the FULL dataset is cached, and subsets are selected per run.
     Supports both new-style ("dataset": {"splits": {...}}) and old-style (top-level keys) configs.
     """
-    # Determine dataset name and sampling settings
+    # -----------------------------------------------------------------------
+    # Extract dataset configuration
+    # -----------------------------------------------------------------------
     if "dataset" in cfg:
         cfg_dataset = cfg["dataset"]
         dataset_name = cfg_dataset["name"]
-        # Get splits from nested config
         splits_cfg = cfg_dataset.get("splits", {})
         n_train = splits_cfg.get("train", "all")
         n_val = splits_cfg.get("validation", "all")
         n_test = splits_cfg.get("test", "all")
         seed = cfg_dataset.get("seed", 42)
     elif "datasets" in cfg and isinstance(cfg["datasets"], list):
-        # Old Axolotl format (backward compatibility)
         cfg_dataset = cfg["datasets"][0]
         dataset_name = cfg_dataset["path"]
         n_train = cfg.get("train_samples", "all")
@@ -72,10 +72,12 @@ def load_and_prepare_dataset(cfg):
     else:
         raise KeyError("Dataset configuration not found. Expected 'dataset' or 'datasets' key.")
 
+    # -----------------------------------------------------------------------
+    # Load or download full dataset
+    # -----------------------------------------------------------------------
+    os.makedirs(DATASETS_DIR, exist_ok=True)
     local_path = os.path.join(DATASETS_DIR, dataset_name.replace("/", "_"))
 
-    # Try loading locally, else download
-    os.makedirs(DATASETS_DIR, exist_ok=True)
     if os.path.exists(local_path):
         print(f"📂 Loading dataset from local cache: {local_path}")
         dataset = load_from_disk(local_path)
@@ -83,17 +85,20 @@ def load_and_prepare_dataset(cfg):
         print(f"⬇️  Downloading dataset from Hugging Face: {dataset_name}")
         dataset = load_dataset(dataset_name)
         dataset.save_to_disk(local_path)
-        print(f"✅ Dataset saved locally to: {local_path}")
+        print(f"✅ Full dataset saved locally to: {local_path}")
 
-    # Handle variations in split keys
+    # -----------------------------------------------------------------------
+    # Handle variations in split keys and select subsets dynamically
+    # -----------------------------------------------------------------------
     val_key = "validation" if "validation" in dataset else "val"
 
     train = select_subset(dataset["train"], n_train, seed=seed)
     val = select_subset(dataset[val_key], n_val, seed=seed)
     test = select_subset(dataset["test"], n_test, seed=seed)
 
-    print(f"📊 Loaded {len(train)} train / {len(val)} val / {len(test)} test samples.")
+    print(f"📊 Loaded {len(train)} train / {len(val)} val / {len(test)} test samples (from full cache).")
     return train, val, test
+
 
 
 # ---------------------------------------------------------------------------
