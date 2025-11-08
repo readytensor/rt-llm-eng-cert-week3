@@ -22,19 +22,12 @@ os.makedirs(BASELINE_OUTPUTS_DIR, exist_ok=True)
 
 cfg = load_config()
 
-
 def evaluate_baseline():
     """Run baseline evaluation on the SAMSum dataset using the base model."""
 
-    # Load dataset configuration
-    dataset_cfg = {
-        "name": cfg["datasets"][0]["path"],
-        "train_samples": cfg.get("train_samples", "all"),
-        "val_samples": cfg.get("val_samples", 200),
-        "test_samples": cfg.get("test_samples", 200),
-        "seed": cfg.get("seed", 42),
-        "cache_dir": cfg["datasets"][0].get("cache_dir", None),
-    }
+    # Load validation data
+    _, val_data, _ = load_and_prepare_dataset(cfg)
+    print(f"📊 Loaded {len(val_data)} validation samples.")
 
     # Load model + tokenizer (no quantization or LoRA)
     model, tokenizer = setup_model_and_tokenizer(
@@ -42,10 +35,6 @@ def evaluate_baseline():
         use_4bit=False,
         use_lora=False,
     )
-
-    # Load validation data
-    _, val_data, _ = load_and_prepare_dataset(dataset_cfg)
-    print(f"📊 Loaded {len(val_data)} validation samples.")
 
     # Generate predictions
     preds = generate_predictions(
@@ -102,6 +91,7 @@ if __name__ == "__main__":
     rouge_scores, predictions = evaluate_baseline()
     print("\n✅ Evaluation complete.")
 
+    
     print("\n📈 Baseline ROUGE Results:")
     print(f"  ROUGE-1: {rouge_scores['rouge1']:.2%}")
     print(f"  ROUGE-2: {rouge_scores['rouge2']:.2%}")
