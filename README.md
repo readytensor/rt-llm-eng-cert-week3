@@ -296,15 +296,6 @@ This is an educational repository. Feel free to:
 
 ---
 
-## 📚 Additional Resources
-
-- [Hugging Face Transformers Documentation](https://huggingface.co/docs/transformers)
-- [PEFT (Parameter-Efficient Fine-Tuning) Guide](https://huggingface.co/docs/peft)
-- [OpenAI Fine-Tuning Guide](https://platform.openai.com/docs/guides/fine-tuning)
-- [Weights & Biases Documentation](https://docs.wandb.ai/)
-
----
-
 ## 📄 License
 
 This project is licensed under the CC BY-NC-SA 4.0 License - see the [LICENSE](LICENSE) file for details.
