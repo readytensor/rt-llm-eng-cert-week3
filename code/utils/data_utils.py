@@ -30,35 +30,49 @@ def get_local_dataset_path(dataset_name: str, cache_dir: str = None) -> str:
     return os.path.join(base_dir, safe_name)
 
 
-def select_subset(split, n):
-    """Return a subset of n samples, or the entire split if n='all' or None."""
-    if n == "all" or n is None:
-        return split
-    return split.select(range(min(n, len(split))))
+def select_subset(dataset, n_samples, seed=42):
+    """
+    Select a subset of the dataset.
+    If n_samples is "all" or None, return the entire dataset.
+    Otherwise, sample n_samples examples.
+    """
+    if n_samples == "all" or n_samples is None:
+        return dataset
+    
+    if n_samples > len(dataset):
+        print(f"⚠️  Requested {n_samples} samples but only {len(dataset)} available. Using all samples.")
+        return dataset
+    
+    return dataset.shuffle(seed=seed).select(range(n_samples))
 
 
 def load_and_prepare_dataset(cfg):
     """
     Load dataset splits according to configuration.
-    Supports both old-style ("dataset": {...}) and new-style ("datasets": [ {...} ]) configs.
+    Supports both new-style ("dataset": {"splits": {...}}) and old-style (top-level keys) configs.
     """
     # Determine dataset name and sampling settings
     if "dataset" in cfg:
         cfg_dataset = cfg["dataset"]
         dataset_name = cfg_dataset["name"]
+        # Get splits from nested config
+        splits_cfg = cfg_dataset.get("splits", {})
+        n_train = splits_cfg.get("train", "all")
+        n_val = splits_cfg.get("validation", "all")
+        n_test = splits_cfg.get("test", "all")
+        seed = cfg_dataset.get("seed", 42)
     elif "datasets" in cfg and isinstance(cfg["datasets"], list):
+        # Old Axolotl format (backward compatibility)
         cfg_dataset = cfg["datasets"][0]
         dataset_name = cfg_dataset["path"]
+        n_train = cfg.get("train_samples", "all")
+        n_val = cfg.get("val_samples", "all")
+        n_test = cfg.get("test_samples", "all")
+        seed = cfg.get("seed", 42)
     else:
-        raise KeyError("Dataset name/path not found in configuration.")
+        raise KeyError("Dataset configuration not found. Expected 'dataset' or 'datasets' key.")
 
-    seed = cfg.get("seed", 42)
     local_path = os.path.join(DATASETS_DIR, dataset_name.replace("/", "_"))
-
-    # Sample sizes (use top-level config if available)
-    n_train = cfg.get("train_samples", "all")
-    n_val = cfg.get("val_samples", 200)
-    n_test = cfg.get("test_samples", 200)
 
     # Try loading locally, else download
     os.makedirs(DATASETS_DIR, exist_ok=True)
@@ -74,9 +88,9 @@ def load_and_prepare_dataset(cfg):
     # Handle variations in split keys
     val_key = "validation" if "validation" in dataset else "val"
 
-    train = select_subset(dataset["train"], n_train)
-    val = select_subset(dataset[val_key], n_val)
-    test = select_subset(dataset["test"].shuffle(seed=seed), n_test)
+    train = select_subset(dataset["train"], n_train, seed=seed)
+    val = select_subset(dataset[val_key], n_val, seed=seed)
+    test = select_subset(dataset["test"], n_test, seed=seed)
 
     print(f"📊 Loaded {len(train)} train / {len(val)} val / {len(test)} test samples.")
     return train, val, test
