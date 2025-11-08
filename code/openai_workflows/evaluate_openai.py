@@ -102,7 +102,7 @@ def generate_openai_predictions(
 
 
 def evaluate_openai_model(
-    model_name: str, cfg, limit: int = None, max_workers: int = 5
+    model_name: str, cfg: dict, limit: int = None, max_workers: int = 5
 ):
     """
     Run evaluation on an OpenAI model (base or fine-tuned).
@@ -115,17 +115,8 @@ def evaluate_openai_model(
     """
     print(f"\n🚀 Evaluating OpenAI model: {model_name}")
 
-    # Dataset configuration
-    dataset_cfg = {
-        "name": cfg["datasets"][0]["path"],
-        "train_samples": cfg.get("train_samples", "all"),
-        "val_samples": cfg.get("val_samples", 200),
-        "test_samples": cfg.get("test_samples", 200),
-        "seed": cfg.get("seed", 42),
-        "cache_dir": cfg["datasets"][0].get("cache_dir", None),
-    }
+    _, val_data, _ = load_and_prepare_dataset(cfg)
 
-    _, val_data, _ = load_and_prepare_dataset(dataset_cfg)
     if limit:
         val_data = val_data.select(range(limit))
         print(f"⚙️  Limiting evaluation to first {limit} samples.")
