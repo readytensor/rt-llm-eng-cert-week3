@@ -1,126 +1,101 @@
 """
 evaluate_lora.py
-Run inference and evaluation on the SAMSum dataset using a fine-tuned LoRA model.
+Evaluate a fine-tuned LoRA model on the SAMSum dataset.
+Reuses shared utilities for config, dataset loading, and inference.
 """
 
 import os
 import json
 import torch
-from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from peft import PeftModel
 from dotenv import load_dotenv
+from peft import PeftModel
 
-from utils import load_and_prepare_dataset, build_messages_for_sample, compute_rouge
-
+from utils.config_utils import load_config
+from utils.data_utils import load_and_prepare_dataset
+from utils.model_utils import setup_model_and_tokenizer
+from utils.inference_utils import generate_predictions, compute_rouge
+from paths import OUTPUTS_DIR
 
 load_dotenv()
-
-# ---------------------------------------------------------------------------
-# Load config
-# ---------------------------------------------------------------------------
-with open("config.json") as f:
-    CFG = json.load(f)
-
-MODEL_NAME = CFG["model_name"]
-TASK_INSTRUCTION = CFG["task_instruction"]
-CFG_DATASET = CFG["dataset"]
-
-ADAPTER_DIR = "./outputs/lora_samsum/lora_adapters"
-OUTPUT_DIR = "./outputs/lora_samsum"
-
-
-# ---------------------------------------------------------------------------
-# Generate summaries
-# ---------------------------------------------------------------------------
-def generate_predictions(
-    model, tokenizer, dataset, task_instruction, num_samples=None, batch_size=8
-):
-    """Generate summaries for test samples."""
-    if num_samples is not None and num_samples < len(dataset):
-        dataset = dataset.select(range(num_samples))
-
-    prompts = []
-    for sample in dataset:
-        messages = build_messages_for_sample(
-            sample, task_instruction, include_assistant=False
-        )
-        prompt = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
-        prompts.append(prompt)
-
-    pipe = pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        device_map="auto",
-        dtype=torch.bfloat16,
-        do_sample=False,
-    )
-
-    preds = []
-    for i in tqdm(range(0, len(prompts), batch_size), desc="Generating summaries"):
-        batch = prompts[i : i + batch_size]
-        outputs = pipe(batch, max_new_tokens=128, return_full_text=False)
-        preds.extend([o[0]["generated_text"].strip() for o in outputs])
-
-    return preds
 
 
 # ---------------------------------------------------------------------------
 # Evaluation
 # ---------------------------------------------------------------------------
-def evaluate_model(
-    adapter_dir=ADAPTER_DIR, model_name=MODEL_NAME, task_instruction=TASK_INSTRUCTION
-):
-    """Load LoRA adapters and evaluate on test data."""
-    print(f"\nLoading base model: {model_name}")
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name, dtype=torch.bfloat16, device_map="auto"
-    )
 
-    print(f"Loading LoRA adapters from: {adapter_dir}")
-    model = PeftModel.from_pretrained(base_model, adapter_dir)
-    tokenizer = AutoTokenizer.from_pretrained(adapter_dir)
+def evaluate_lora_model(cfg):
+    """Load base model, attach LoRA adapters, and evaluate."""
+
+    # ----------------------------
+    # Model & Tokenizer
+    # ----------------------------
+    print("\n🚀 Loading base model...")
+    model, tokenizer = setup_model_and_tokenizer(cfg, use_4bit=True, use_lora=False)
+
+    adapter_dir = os.path.join(OUTPUTS_DIR, "lora_samsum", "lora_adapters")
+    if not os.path.exists(adapter_dir):
+        raise FileNotFoundError(f"❌ LoRA adapter directory not found: {adapter_dir}")
+
+    print(f"🔧 Loading fine-tuned LoRA adapters from: {adapter_dir}")
+    model = PeftModel.from_pretrained(model, adapter_dir)
+    model.eval()
     tokenizer.padding_side = "left"
 
-    _, val_data, _ = load_and_prepare_dataset(CFG_DATASET)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = model.to(device)
 
-    print(f"\nRunning inference on {len(val_data)} samples...")
+    # ----------------------------
+    # Dataset
+    # ----------------------------
+    print("\n📂 Loading dataset...")
+    _, val_data, _ = load_and_prepare_dataset(cfg)
+    print(f"✅ Validation set size: {len(val_data)} samples")
+
+    # ----------------------------
+    # Inference
+    # ----------------------------
+    print("\n🧠 Generating summaries...")
     preds = generate_predictions(
-        model, tokenizer, val_data, task_instruction, batch_size=4
+        model=model,
+        tokenizer=tokenizer,
+        dataset=val_data,
+        task_instruction=cfg["task_instruction"],
+        batch_size=cfg.get("eval_batch_size", 4),
     )
 
-    print("\nComputing ROUGE scores...")
+    # ----------------------------
+    # Evaluation
+    # ----------------------------
+    print("\n📏 Computing ROUGE metrics...")
     scores = compute_rouge(preds, val_data)
 
-    print("\nROUGE Results:")
+    print("\n📊 Evaluation Results:")
     print(f"  ROUGE-1: {scores['rouge1']:.2%}")
     print(f"  ROUGE-2: {scores['rouge2']:.2%}")
     print(f"  ROUGE-L: {scores['rougeL']:.2%}")
 
-    # -----------------------------------------------------------------------
-    # Save outputs
-    # -----------------------------------------------------------------------
+    # ----------------------------
+    # Save Outputs
+    # ----------------------------
+    output_dir = os.path.join(OUTPUTS_DIR, "lora_samsum")
+    os.makedirs(output_dir, exist_ok=True)
+
+    results_path = os.path.join(output_dir, "eval_results.json")
+    preds_path = os.path.join(output_dir, "predictions.jsonl")
+
     results = {
         "rouge1": scores["rouge1"],
         "rouge2": scores["rouge2"],
         "rougeL": scores["rougeL"],
         "num_samples": len(val_data),
+        "base_model": cfg["base_model"],
         "adapter_dir": adapter_dir,
-        "model_name": model_name,
     }
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    results_path = os.path.join(OUTPUT_DIR, "eval_results.json")
-    preds_path = os.path.join(OUTPUT_DIR, "predictions.jsonl")
-
-    with open(results_path, "w") as f:
+    with open(results_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 
-    with open(preds_path, "w") as f:
+    with open(preds_path, "w", encoding="utf-8") as f:
         for i, pred in enumerate(preds):
             json.dump(
                 {
@@ -132,8 +107,8 @@ def evaluate_model(
             )
             f.write("\n")
 
-    print(f"\nSaved results to {results_path}")
-    print(f"Saved predictions to {preds_path}")
+    print(f"\n💾 Saved results to {results_path}")
+    print(f"💾 Saved predictions to {preds_path}")
 
     return scores, preds
 
@@ -141,9 +116,12 @@ def evaluate_model(
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 def main():
-    scores, preds = evaluate_model()
-    print("\nEvaluation complete.")
+    cfg = load_config()
+    scores, preds = evaluate_lora_model(cfg)
+
+    print("\n✅ Evaluation complete.")
     print("Sample prediction:\n")
     print(preds[0])
 

@@ -152,6 +152,7 @@ def train_model(cfg, model, tokenizer, train_data, val_data):
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     cfg = load_config()
 
