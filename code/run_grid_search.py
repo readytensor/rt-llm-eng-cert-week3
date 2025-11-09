@@ -21,9 +21,9 @@ with open("configs/config_samsum.json", encoding="utf-8") as f:
 # Define search space
 # ---------------------------------------------------------------------------
 SEARCH_SPACE = {
-    "lora_r": [4, 8],
-    "lora_alpha": [8, 16],
-    "learning_rate": [1e-4, 2e-4],
+    "lora_r": [4, 8, 16],
+    "lora_alpha": [8, 16, 32],
+    "learning_rate": [2e-4, 2e-5],
     "target_modules": [
         ["q_proj", "v_proj"],  # Just Q and V
         ["q_proj", "v_proj", "k_proj", "o_proj"],  # All attention
