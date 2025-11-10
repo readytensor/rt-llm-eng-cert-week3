@@ -23,7 +23,8 @@ load_dotenv()
 # Evaluation
 # ---------------------------------------------------------------------------
 
-def evaluate_lora_model(cfg):
+
+def evaluate_peft_model(cfg):
     """Load base model, attach LoRA adapters, and evaluate."""
 
     # ----------------------------
@@ -117,9 +118,10 @@ def evaluate_lora_model(cfg):
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     cfg = load_config()
-    scores, preds = evaluate_lora_model(cfg)
+    scores, preds = evaluate_peft_model(cfg)
 
     print("\n✅ Evaluation complete.")
     print("Sample prediction:\n")
