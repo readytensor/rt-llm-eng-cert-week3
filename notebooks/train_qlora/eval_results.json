@@ -1,0 +1,7 @@
+{
+  "rouge1": 0.47327449799688287,
+  "rouge2": 0.2276766884280657,
+  "rougeL": 0.3913087766415876,
+  "num_samples": 200,
+  "base_model": "meta-llama/Llama-3.2-1B-Instruct"
+}

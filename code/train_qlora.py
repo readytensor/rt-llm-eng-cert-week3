@@ -5,17 +5,17 @@ Fully integrated with shared utilities and config.yaml.
 
 import os
 import wandb
+import torch
 from dotenv import load_dotenv
+from torch.nn.utils.rnn import pad_sequence
 from transformers import (
     TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling,
 )
 from utils.config_utils import load_config
 from utils.data_utils import load_and_prepare_dataset, build_messages_for_sample
 from utils.model_utils import setup_model_and_tokenizer
 from paths import OUTPUTS_DIR
-import torch
 
 
 # ---------------------------------------------------------------------------
@@ -29,6 +29,35 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # ---------------------------------------------------------------------------
 # Preprocessing
 # ---------------------------------------------------------------------------
+
+
+class PaddingCollator:
+    def __init__(self, tokenizer, label_pad_token_id=-100):
+        self.tokenizer = tokenizer
+        self.label_pad_token_id = label_pad_token_id
+
+    def __call__(self, batch):
+        # Convert lists to tensors
+        input_ids = [torch.tensor(f["input_ids"], dtype=torch.long) for f in batch]
+        attn_masks = [
+            torch.tensor(f["attention_mask"], dtype=torch.long) for f in batch
+        ]
+        labels = [torch.tensor(f["labels"], dtype=torch.long) for f in batch]
+
+        # Pad to the max length in this batch
+        input_ids = pad_sequence(
+            input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id
+        )
+        attn_masks = pad_sequence(attn_masks, batch_first=True, padding_value=0)
+        labels = pad_sequence(
+            labels, batch_first=True, padding_value=self.label_pad_token_id
+        )
+
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attn_masks,
+            "labels": labels,
+        }
 
 
 def preprocess_samples(examples, tokenizer, task_instruction, max_length):
@@ -58,7 +87,7 @@ def preprocess_samples(examples, tokenizer, task_instruction, max_length):
             text_full,
             max_length=max_length,
             truncation=True,
-            padding="max_length",
+            padding=False,
             add_special_tokens=False,
             return_offsets_mapping=True,
         )
@@ -99,6 +128,7 @@ def train_model(cfg, model, tokenizer, train_data, val_data):
         batched=True,
         remove_columns=train_data.column_names,
     )
+
     tokenized_val = val_data.map(
         lambda e: preprocess_samples(
             e, tokenizer, task_instruction, cfg["sequence_len"]
@@ -107,7 +137,7 @@ def train_model(cfg, model, tokenizer, train_data, val_data):
         remove_columns=val_data.column_names,
     )
 
-    collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+    collator = PaddingCollator(tokenizer=tokenizer)
 
     output_dir = os.path.join(OUTPUTS_DIR, "lora_samsum")
     os.makedirs(output_dir, exist_ok=True)
