@@ -184,8 +184,11 @@ def train_model(cfg, model, tokenizer, train_data, val_data):
 # ---------------------------------------------------------------------------
 
 
-def main():
-    cfg = load_config()
+def main(cfg_path: str = None):
+    if cfg_path:
+        cfg = load_config(cfg_path)
+    else:
+        cfg = load_config()
 
     # Load dataset
     train_data, val_data, _ = load_and_prepare_dataset(cfg)

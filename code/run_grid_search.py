@@ -5,24 +5,28 @@ Simple grid search for LoRA hyperparameters using the SAMSum fine-tuning setup.
 
 import os
 import json
-from itertools import product
+from paths import CONFIG_FILE_PATH
 from copy import deepcopy
-from train_lora import main as train_main
-
+from train_qlora import main as train_main
+from utils.config_utils import load_config
 
 # ---------------------------------------------------------------------------
 # Load base config
 # ---------------------------------------------------------------------------
-with open("configs/config_samsum.json", encoding="utf-8") as f:
-    BASE_CFG = json.load(f)
+BASE_CFG = load_config(CONFIG_FILE_PATH)
 
 
 # ---------------------------------------------------------------------------
-# Define search space
+# Define default values and search space for one-at-a-time variation
 # ---------------------------------------------------------------------------
+DEFAULTS = {
+    "lora_r": 8,
+    "learning_rate": 2e-4,
+    "target_modules": ["q_proj", "v_proj"],
+}
+
 SEARCH_SPACE = {
     "lora_r": [4, 8, 16],
-    "lora_alpha": [8, 16, 32],
     "learning_rate": [2e-4, 2e-5],
     "target_modules": [
         ["q_proj", "v_proj"],  # Just Q and V
@@ -43,33 +47,71 @@ OUTPUT_ROOT = "./experiments"
 
 
 # ---------------------------------------------------------------------------
-# Run grid search
+# Run one-at-a-time parameter search
 # ---------------------------------------------------------------------------
 def run_grid_search():
+    """
+    Run one-at-a-time parameter variation experiments.
+    Automatically generates experiments by varying one parameter at a time.
+    """
     os.makedirs(OUTPUT_ROOT, exist_ok=True)
     configs = []
 
-    # Create all combinations of parameters
-    for r, alpha, lr, targets in product(
-        SEARCH_SPACE["lora_r"],
-        SEARCH_SPACE["lora_alpha"],
-        SEARCH_SPACE["learning_rate"],
-        SEARCH_SPACE["target_modules"],
-    ):
+    def create_config(param_values, exp_name):
+        """Create a config with specified parameter values."""
         cfg = deepcopy(BASE_CFG)
-        cfg["lora"]["r"] = r
-        cfg["lora"]["alpha"] = alpha
-        cfg["training"]["learning_rate"] = lr
-        cfg["lora"]["target_modules"] = targets
 
-        # Create readable experiment name
-        modules_tag = (
-            "qv"
-            if targets == ["q_proj", "v_proj"]
-            else "attn" if len(targets) == 4 else "attn_mlp"
-        )
-        cfg["experiment_name"] = f"r{r}_a{alpha}_lr{lr}_{modules_tag}"
-        configs.append(cfg)
+        # Apply parameter values to config
+        cfg["lora_r"] = param_values["lora_r"]
+        cfg["lora_alpha"] = param_values["lora_r"] * 2
+        cfg["learning_rate"] = param_values["learning_rate"]
+        cfg["target_modules"] = param_values["target_modules"]
+        cfg["experiment_name"] = exp_name
+
+        return cfg
+
+    def get_modules_tag(targets):
+        """Generate a short tag for target modules."""
+        if targets == ["q_proj", "v_proj"]:
+            return "qv"
+        elif len(targets) == 4:
+            return "attn"
+        else:
+            return "attn_mlp"
+
+    def format_exp_name(param_values, varied_param=None):
+        """Generate experiment name from parameter values."""
+        parts = []
+        if varied_param:
+            parts.append(f"vary_{varied_param}")
+        else:
+            parts.append("baseline")
+
+        parts.append(f"r{param_values['lora_r']}")
+        parts.append(f"lr{param_values['learning_rate']}")
+        parts.append(get_modules_tag(param_values["target_modules"]))
+
+        return "_".join(parts)
+
+    # 1. Baseline experiment (all defaults)
+    baseline_name = format_exp_name(DEFAULTS)
+    baseline_cfg = create_config(DEFAULTS, baseline_name)
+    configs.append(baseline_cfg)
+
+    # 2. Vary each parameter one at a time
+    for param_name in SEARCH_SPACE.keys():
+        for value in SEARCH_SPACE[param_name]:
+            # Skip if this is the default value
+            if value == DEFAULTS[param_name]:
+                continue
+
+            # Create param values with all defaults except the one we're varying
+            param_values = deepcopy(DEFAULTS)
+            param_values[param_name] = value
+
+            exp_name = format_exp_name(param_values, varied_param=param_name)
+            cfg = create_config(param_values, exp_name)
+            configs.append(cfg)
 
     print(f"\nRunning {len(configs)} experiments...\n")
 
@@ -91,7 +133,7 @@ def run_grid_search():
         os.environ["CONFIG_PATH"] = cfg_path
 
         try:
-            train_main()
+            train_main(cfg_path=cfg_path)
         except Exception as e:
             print(f"✗ Error in experiment {cfg['experiment_name']}: {e}")
             continue
