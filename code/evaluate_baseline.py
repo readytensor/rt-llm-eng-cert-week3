@@ -22,6 +22,7 @@ os.makedirs(BASELINE_OUTPUTS_DIR, exist_ok=True)
 
 cfg = load_config()
 
+
 def evaluate_baseline():
     """Run baseline evaluation on the SAMSum dataset using the base model."""
 
@@ -34,6 +35,7 @@ def evaluate_baseline():
         cfg=cfg,
         use_4bit=False,
         use_lora=False,
+        padding_side="left",
     )
 
     # Generate predictions
@@ -91,7 +93,6 @@ if __name__ == "__main__":
     rouge_scores, predictions = evaluate_baseline()
     print("\n✅ Evaluation complete.")
 
-    
     print("\n📈 Baseline ROUGE Results:")
     print(f"  ROUGE-1: {rouge_scores['rouge1']:.2%}")
     print(f"  ROUGE-2: {rouge_scores['rouge2']:.2%}")

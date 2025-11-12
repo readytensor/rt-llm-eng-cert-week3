@@ -13,7 +13,9 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 # ---------------------------------------------------------------------------
 
 
-def setup_model_and_tokenizer(cfg, use_4bit: bool = None, use_lora: bool = None):
+def setup_model_and_tokenizer(
+    cfg, use_4bit: bool = None, use_lora: bool = None, padding_side: str = "right"
+):
     """
     Load model, tokenizer, and apply quantization + LoRA config if specified.
 
@@ -37,7 +39,7 @@ def setup_model_and_tokenizer(cfg, use_4bit: bool = None, use_lora: bool = None)
     # ------------------------------
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = "right"
+    tokenizer.padding_side = padding_side
 
     # Determine quantization + LoRA usage
     load_in_4bit = use_4bit if use_4bit is not None else cfg.get("load_in_4bit", False)

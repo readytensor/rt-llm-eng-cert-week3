@@ -190,7 +190,9 @@ def main():
     # Load dataset
     train_data, val_data, _ = load_and_prepare_dataset(cfg)
     # Reuse unified model setup (quantization + LoRA)
-    model, tokenizer = setup_model_and_tokenizer(cfg, use_4bit=True, use_lora=True)
+    model, tokenizer = setup_model_and_tokenizer(
+        cfg, use_4bit=True, use_lora=True, padding_side="right"
+    )
 
     # Initialize W&B
     wandb.init(

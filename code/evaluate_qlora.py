@@ -31,7 +31,9 @@ def evaluate_peft_model(cfg):
     # Model & Tokenizer
     # ----------------------------
     print("\n🚀 Loading base model...")
-    model, tokenizer = setup_model_and_tokenizer(cfg, use_4bit=True, use_lora=False)
+    model, tokenizer = setup_model_and_tokenizer(
+        cfg, use_4bit=True, use_lora=False, padding_side="left"
+    )
 
     adapter_dir = os.path.join(OUTPUTS_DIR, "lora_samsum", "lora_adapters")
     if not os.path.exists(adapter_dir):
