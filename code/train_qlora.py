@@ -116,7 +116,7 @@ def preprocess_samples(examples, tokenizer, task_instruction, max_length):
 # ---------------------------------------------------------------------------
 
 
-def train_model(cfg, model, tokenizer, train_data, val_data):
+def train_model(cfg, model, tokenizer, train_data, val_data, save_dir: str = None):
     """Tokenize datasets, configure Trainer, and run LoRA fine-tuning."""
     task_instruction = cfg["task_instruction"]
 
@@ -173,7 +173,12 @@ def train_model(cfg, model, tokenizer, train_data, val_data):
     trainer.train()
     print("\n✅ Training complete!")
 
-    save_dir = os.path.join(output_dir, "lora_adapters")
+    if save_dir is None:
+        save_dir = os.path.join(output_dir, "lora_adapters")
+    else:
+        save_dir = os.path.join(save_dir, "lora_adapters")
+
+    os.makedirs(save_dir, exist_ok=True)
     model.save_pretrained(save_dir)
     tokenizer.save_pretrained(save_dir)
     print(f"💾 Saved LoRA adapters to {save_dir}")
@@ -210,7 +215,14 @@ def main(cfg_path: str = None):
         },
     )
 
-    train_model(cfg, model, tokenizer, train_data, val_data)
+    train_model(
+        cfg,
+        model,
+        tokenizer,
+        train_data,
+        val_data,
+        save_dir=cfg.get("wandb_run_name", None),
+    )
 
 
 if __name__ == "__main__":
