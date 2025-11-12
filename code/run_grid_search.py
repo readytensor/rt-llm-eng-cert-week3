@@ -5,7 +5,7 @@ Simple grid search for LoRA hyperparameters using the SAMSum fine-tuning setup.
 
 import os
 import json
-from paths import CONFIG_FILE_PATH
+from paths import CONFIG_FILE_PATH, OUTPUTS_DIR
 from copy import deepcopy
 from train_qlora import main as train_main
 from utils.config_utils import load_config
@@ -43,8 +43,6 @@ SEARCH_SPACE = {
     ],
 }
 
-OUTPUT_ROOT = "./experiments"
-
 
 # ---------------------------------------------------------------------------
 # Run one-at-a-time parameter search
@@ -54,7 +52,7 @@ def run_grid_search():
     Run one-at-a-time parameter variation experiments.
     Automatically generates experiments by varying one parameter at a time.
     """
-    os.makedirs(OUTPUT_ROOT, exist_ok=True)
+    os.makedirs(OUTPUTS_DIR, exist_ok=True)
     configs = []
 
     def create_config(param_values, exp_name):
@@ -121,8 +119,9 @@ def run_grid_search():
         print(f"Experiment {i}/{len(configs)}: {cfg['wandb_run_name']}")
         print("=" * 80)
 
-        exp_dir = os.path.join(OUTPUT_ROOT, cfg["wandb_run_name"])
+        exp_dir = os.path.join(OUTPUTS_DIR, "grid_search", cfg["wandb_run_name"])
         os.makedirs(exp_dir, exist_ok=True)
+        cfg["save_dir"] = exp_dir
 
         # Save config for this experiment
         cfg_path = os.path.join(exp_dir, "config.json")

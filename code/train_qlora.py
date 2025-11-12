@@ -221,7 +221,7 @@ def main(cfg_path: str = None):
         tokenizer,
         train_data,
         val_data,
-        save_dir=cfg.get("wandb_run_name", None),
+        save_dir=cfg.get("save_dir", None),
     )
 
     # Finish the wandb run to allow next experiment to start fresh
