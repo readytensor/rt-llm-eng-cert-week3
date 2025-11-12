@@ -26,7 +26,7 @@ DEFAULTS = {
 }
 
 SEARCH_SPACE = {
-    "lora_r": [4, 8, 16],
+    "lora_r": [4, 8, 16, 32],
     "learning_rate": [2e-4, 2e-5],
     "target_modules": [
         ["q_proj", "v_proj"],  # Just Q and V
