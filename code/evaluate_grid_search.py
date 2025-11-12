@@ -1,7 +1,7 @@
 import os
 import json
-from code.paths import GRIDSEARCH_OUTPUTS_DIR
-from code.evaluate_qlora import evaluate_peft_model
+from paths import GRIDSEARCH_OUTPUTS_DIR
+from evaluate_qlora import evaluate_peft_model
 
 
 def evaluate_grid_search():
