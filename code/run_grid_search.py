@@ -123,6 +123,13 @@ def run_grid_search():
         os.makedirs(exp_dir, exist_ok=True)
         cfg["save_dir"] = exp_dir
 
+        model_file_path = os.path.join(
+            exp_dir, "lora_adapters", "adapter_model.safetensors"
+        )
+        if os.path.exists(model_file_path):
+            print(f"✗ Model file already exists: {model_file_path}. Skipping...")
+            continue
+
         # Save config for this experiment
         cfg_path = os.path.join(exp_dir, "config.json")
         with open(cfg_path, "w", encoding="utf-8") as f:
