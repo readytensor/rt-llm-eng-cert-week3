@@ -24,7 +24,7 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 
 
-def evaluate_peft_model(cfg):
+def evaluate_peft_model(cfg, adapter_dir: str = None, results_dir: str = None):
     """Load base model, attach LoRA adapters, and evaluate."""
 
     # ----------------------------
@@ -35,7 +35,9 @@ def evaluate_peft_model(cfg):
         cfg, use_4bit=True, use_lora=False, padding_side="left"
     )
 
-    adapter_dir = os.path.join(OUTPUTS_DIR, "lora_samsum", "lora_adapters")
+    if adapter_dir is None:
+        adapter_dir = os.path.join(OUTPUTS_DIR, "lora_samsum", "lora_adapters")
+
     if not os.path.exists(adapter_dir):
         raise FileNotFoundError(f"❌ LoRA adapter directory not found: {adapter_dir}")
 
@@ -80,11 +82,12 @@ def evaluate_peft_model(cfg):
     # ----------------------------
     # Save Outputs
     # ----------------------------
-    output_dir = os.path.join(OUTPUTS_DIR, "lora_samsum")
-    os.makedirs(output_dir, exist_ok=True)
+    if results_dir is None:
+        results_dir = os.path.join(OUTPUTS_DIR, "lora_samsum")
+    os.makedirs(results_dir, exist_ok=True)
 
-    results_path = os.path.join(output_dir, "eval_results.json")
-    preds_path = os.path.join(output_dir, "predictions.jsonl")
+    results_path = os.path.join(results_dir, "eval_results.json")
+    preds_path = os.path.join(results_dir, "predictions.jsonl")
 
     results = {
         "rouge1": scores["rouge1"],
