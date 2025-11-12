@@ -224,6 +224,9 @@ def main(cfg_path: str = None):
         save_dir=cfg.get("wandb_run_name", None),
     )
 
+    # Finish the wandb run to allow next experiment to start fresh
+    wandb.finish()
+
 
 if __name__ == "__main__":
     main()
