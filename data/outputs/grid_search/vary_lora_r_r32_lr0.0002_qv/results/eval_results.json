@@ -1,0 +1,8 @@
+{
+  "rouge1": 0.4733167494621585,
+  "rouge2": 0.2309699475941964,
+  "rougeL": 0.3899312308841396,
+  "num_samples": 200,
+  "base_model": "meta-llama/Llama-3.2-1B-Instruct",
+  "adapter_dir": "/workspace/rt-llm-eng-cert-week3/data/outputs/grid_search/vary_lora_r_r32_lr0.0002_qv/lora_adapters"
+}
