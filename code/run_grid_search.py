@@ -66,7 +66,7 @@ def run_grid_search():
         cfg["lora_alpha"] = param_values["lora_r"] * 2
         cfg["learning_rate"] = param_values["learning_rate"]
         cfg["target_modules"] = param_values["target_modules"]
-        cfg["experiment_name"] = exp_name
+        cfg["wandb_run_name"] = exp_name
 
         return cfg
 
@@ -118,10 +118,10 @@ def run_grid_search():
     # Run all experiments sequentially
     for i, cfg in enumerate(configs, 1):
         print("=" * 80)
-        print(f"Experiment {i}/{len(configs)}: {cfg['experiment_name']}")
+        print(f"Experiment {i}/{len(configs)}: {cfg['wandb_run_name']}")
         print("=" * 80)
 
-        exp_dir = os.path.join(OUTPUT_ROOT, cfg["experiment_name"])
+        exp_dir = os.path.join(OUTPUT_ROOT, cfg["wandb_run_name"])
         os.makedirs(exp_dir, exist_ok=True)
 
         # Save config for this experiment
@@ -135,10 +135,10 @@ def run_grid_search():
         try:
             train_main(cfg_path=cfg_path)
         except Exception as e:
-            print(f"✗ Error in experiment {cfg['experiment_name']}: {e}")
+            print(f"✗ Error in experiment {cfg['wandb_run_name']}: {e}")
             continue
 
-        print(f"✓ Completed: {cfg['experiment_name']}\n")
+        print(f"✓ Completed: {cfg['wandb_run_name']}\n")
 
 
 # ---------------------------------------------------------------------------
