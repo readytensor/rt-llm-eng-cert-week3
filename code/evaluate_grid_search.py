@@ -17,3 +17,7 @@ def evaluate_grid_search():
             os.makedirs(results_dir, exist_ok=True)
 
             evaluate_peft_model(cfg, adapter_dir, results_dir)
+
+
+if __name__ == "__main__":
+    evaluate_grid_search()
