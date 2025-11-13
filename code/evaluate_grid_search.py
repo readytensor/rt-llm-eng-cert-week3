@@ -10,7 +10,8 @@ def evaluate_grid_search():
             print(f"Evaluating {exp_dir}")
             adapter_dir = os.path.join(GRIDSEARCH_OUTPUTS_DIR, exp_dir, "lora_adapters")
             with open(
-                os.path.join(GRIDSEARCH_OUTPUTS_DIR, exp_dir, "config.json"), "r"
+                os.path.join(GRIDSEARCH_OUTPUTS_DIR, exp_dir, "config.json"), "r",
+                encoding="utf-8"
             ) as f:
                 cfg = json.load(f)
             results_dir = os.path.join(GRIDSEARCH_OUTPUTS_DIR, exp_dir, "results")
