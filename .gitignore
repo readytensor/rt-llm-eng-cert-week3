@@ -230,3 +230,8 @@ temp
 tmp
 
 datasets/
+
+grid_search/
+lora_adapters
+*.safetensors
+adapter_*.bin
