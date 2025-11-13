@@ -232,6 +232,6 @@ tmp
 datasets/
 
 grid_search/
-lora_adapters
+lora_adapters/
 *.safetensors
 adapter_*.bin
