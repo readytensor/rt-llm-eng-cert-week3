@@ -1,7 +1,7 @@
 # -----------------------------------------------
 # Core Framework (GPU build - CUDA 11.8)
 # -----------------------------------------------
---index-url https://download.pytorch.org/whl/cu118
+--extra-index-url https://download.pytorch.org/whl/cu118
 torch==2.9.0
 
 # -----------------------------------------------

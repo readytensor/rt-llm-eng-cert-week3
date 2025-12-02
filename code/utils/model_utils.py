@@ -59,8 +59,6 @@ def setup_model_and_tokenizer(
                 torch, cfg.get("bnb_4bit_compute_dtype", "bfloat16")
             ),
         )
-    else:
-        print("⚙️  Loading model in full precision (no quantization).")
 
     # ------------------------------
     # Model loading
