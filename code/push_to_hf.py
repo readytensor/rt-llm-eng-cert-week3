@@ -14,6 +14,50 @@ import sys
 from pathlib import Path
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
+from huggingface_hub import HfApi
+
+
+def push_adapters_only(model_path: str, hf_model_name: str):
+    """
+    Push only LoRA adapters to Hugging Face Hub without loading base model.
+
+    Args:
+        model_path: Path to the local LoRA adapters directory
+        hf_model_name: Name of the Hugging Face repository (format: username/model-name)
+    """
+    # Validate model path exists
+    model_path = Path(model_path)
+    if not model_path.exists():
+        print(f"Error: Model path '{model_path}' does not exist.")
+        sys.exit(1)
+
+    if not model_path.is_dir():
+        print(f"Error: Model path '{model_path}' is not a directory.")
+        sys.exit(1)
+
+    print(f"Pushing LoRA adapters from '{model_path}' to Hugging Face Hub...")
+
+    try:
+        # Initialize HF API
+        api = HfApi()
+
+        # Upload folder directly
+        api.upload_folder(
+            folder_path=str(model_path),
+            repo_id=hf_model_name,
+            repo_type="model",
+        )
+
+        print(
+            f"\n✓ Successfully pushed adapters to https://huggingface.co/{hf_model_name}"
+        )
+
+    except Exception as e:
+        print(f"\nError: Failed to push adapters to Hugging Face Hub.")
+        print(f"Details: {e}")
+        print("\nMake sure you are logged in to Hugging Face. Run:")
+        print("  huggingface-cli login")
+        sys.exit(1)
 
 
 def push_model_to_hf(model_path: str, hf_model_name: str, base_model_name: str):
@@ -71,8 +115,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Push only adapters (fast, no model loading):
+  python push_to_hf.py --model-path ./checkpoints/checkpoint-45 --hf-model-name username/my-model --adapters-only
+  
+  # Push adapters with base model (loads and combines):
   python push_to_hf.py --model-path ./checkpoints/checkpoint-45 --hf-model-name username/my-model --base-model-name meta-llama/Llama-3.2-1B
-  python push_to_hf.py --model-path /path/to/adapters --hf-model-name org/model-name --base-model-name google/gemma-2b
         """,
     )
 
@@ -93,13 +140,25 @@ Examples:
     parser.add_argument(
         "--base-model-name",
         type=str,
-        required=True,
         help="Base model name on Hugging Face (e.g., meta-llama/Llama-3.2-1B)",
+    )
+
+    parser.add_argument(
+        "--adapters-only",
+        action="store_true",
+        help="Push only adapters without loading base model (faster)",
     )
 
     args = parser.parse_args()
 
-    push_model_to_hf(args.model_path, args.hf_model_name, args.base_model_name)
+    # Choose which method to use
+    if args.adapters_only:
+        push_adapters_only(args.model_path, args.hf_model_name)
+    else:
+        if not args.base_model_name:
+            print("Error: --base-model-name is required when not using --adapters-only")
+            sys.exit(1)
+        push_model_to_hf(args.model_path, args.hf_model_name, args.base_model_name)
 
 
 if __name__ == "__main__":
